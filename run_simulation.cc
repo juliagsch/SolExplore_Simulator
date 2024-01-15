@@ -73,11 +73,8 @@ int main(int argc, char ** argv) {
 	
 	SimulationResult sr = run_simulations(load, solar, metric, days_in_chunk, number_of_chunks);
 
-	// a temporary fix for "inf" issues.
-	// TODO: investigate later why some sr.cost == inf when B or C are low
-	
 	double cost = sr.B / kWh_in_one_cell * B_inv + sr.C * PV_inv;
-	cout << sr.B << "\t" << sr.C << "\t" << cost << endl;
+	cout << "Battery: " << sr.B << "\tPV: " << sr.C << "\tCost: " << cost << endl;
 
 	return 0;
 }
