@@ -166,18 +166,41 @@ std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecord
 
         hourlyStatuses[hour] = status;
     }
-    // Part 2: Logic to compute the nextDepartureTime field
+    // Part 2: Logic to compute the nextDepartureTime field with days that have trips
     std::string nextDepartureTime = "No trips";
     size_t nextRecordIndex = 0;
 
     for (int hour = 0; hour < 24; ++hour)
     {
-        // Update next departure time based on the records
-        while (nextRecordIndex < dayRecords.size() &&
-               convertTimeToHour(dayRecords[nextRecordIndex].departureTime) <= hour)
+        // Handling "No trips" case
+        if (!dayRecords.empty() && dayRecords[0].departureTime == "No trips")
         {
-            nextDepartureTime = dayRecords[nextRecordIndex].nextDepartureTime;
-            ++nextRecordIndex;
+            nextDepartureTime = dayRecords[0].nextDepartureTime;
+            if (nextDepartureTime != "No trips" && hour > convertTimeToHour(nextDepartureTime))
+            {
+                nextDepartureTime = dayRecords[0].nextDepartureTime;
+            }
+            else
+            {
+                nextDepartureTime = "No trips";
+            }
+        }
+        else
+        {
+            // Update next departure time based on the records for days with trips
+            if (nextRecordIndex < dayRecords.size() && hour < convertTimeToHour(dayRecords[nextRecordIndex].departureTime))
+            {
+                nextDepartureTime = dayRecords[nextRecordIndex].departureTime;
+            }
+            else
+            {
+                while (nextRecordIndex < dayRecords.size() &&
+                       convertTimeToHour(dayRecords[nextRecordIndex].departureTime) <= hour)
+                {
+                    nextDepartureTime = dayRecords[nextRecordIndex].nextDepartureTime;
+                    ++nextRecordIndex;
+                }
+            }
         }
 
         // Update the nextDepartureTime for the current hour
