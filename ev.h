@@ -29,7 +29,15 @@ struct EVStatus
 };
 
 // Function declarations
-std::vector<EVRecord> readEVData(const std::string &filename);
+
 void updateEVStatus(EVStatus &status, const std::string &currentTime);
+
+std::vector<EVRecord> readEVData(const std::string &filename);
+void printEVRecords(const std::vector<EVRecord> &evRecords);
+std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecords);
+int findNumberOfDays(const std::vector<EVRecord> &evRecords);
+std::vector<std::vector<EVStatus>> generateAllDailyStatuses(const std::vector<EVRecord> &evRecords);
+int convertTimeToHour(const std::string &timeStr);
+void printAllEVStatuses(const std::vector<std::vector<EVStatus>> &allDailyStatuses, const std::vector<EVRecord> &evRecords);
 
 #endif // EV_H

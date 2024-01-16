@@ -83,7 +83,7 @@ double sim(vector <double> &load_trace, vector <double> &solar_trace, int start_
 	// loop through each hour 
 	for (int t = start_index; t < end_index; t++) {
 
-		updateEVStatus(evStatus, t);
+		//updateEVStatus(evStatus, t);
 
 		// wrap around to the start of the trace if we hit the end.
 		index_t_solar = t % trace_length_solar;

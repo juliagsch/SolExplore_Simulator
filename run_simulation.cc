@@ -86,6 +86,11 @@ int main(int argc, char ** argv) {
 
 	// Initialize EVStatus
 	EVStatus evStatus;
+	//printEVRecords(evRecords);
+
+	// Generate all daily statuses
+	std::vector<std::vector<EVStatus>> allDailyStatuses = generateAllDailyStatuses(evRecords);
+	printAllEVStatuses(allDailyStatuses, evRecords);
 
 	SimulationResult sr = run_simulations(load, solar, metric, days_in_chunk, number_of_chunks);
 
