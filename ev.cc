@@ -157,7 +157,7 @@ int convertTimeToHour(const std::string &timeStr)
     }
 }
 
-std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecords)
+std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecords, double &previousSOC)
 {
     std::vector<EVStatus> hourlyStatuses(24); // 24 hours in a day
 
@@ -225,7 +225,7 @@ std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecord
     }
 
     // Part 3: Logic to fill the currentSOC value of all EVStatus objects
-    double previousSOC = 0.0; // Initial SOC value
+    //double previousSOC = 0.0; // Initial SOC value
 
     for (int hour = 0; hour < 24; ++hour)
     {
@@ -273,6 +273,7 @@ int findNumberOfDays(const std::vector<EVRecord> &evRecords)
     return maxDay;
 }
 
+/*
 std::vector<std::vector<EVStatus>> generateAllDailyStatuses(const std::vector<EVRecord> &evRecords)
 {
     int numDays = findNumberOfDays(evRecords);
@@ -294,6 +295,43 @@ std::vector<std::vector<EVStatus>> generateAllDailyStatuses(const std::vector<EV
         std::vector<EVStatus> dailyStatus = generateDailyStatus(dayRecords);
         allDailyStatuses.push_back(dailyStatus);
     }
+
+    return allDailyStatuses;
+}*/
+
+std::vector<std::vector<EVStatus>> generateAllDailyStatuses(const std::vector<EVRecord> &allRecords)
+{
+    std::vector<std::vector<EVStatus>> allDailyStatuses;
+    double lastDaySOC = 32.0; // Initial SOC value for the first day
+
+    int currentDay = 1;
+    std::vector<EVRecord> dayRecords;
+
+    // Loop through all records and process each day
+    for (const auto &record : allRecords)
+    {
+        if (record.day != currentDay)
+        {
+            // Generate daily status for the previous day and add to allDailyStatuses
+            auto dailyStatuses = generateDailyStatus(dayRecords, lastDaySOC);
+            allDailyStatuses.push_back(dailyStatuses);
+
+            // Update lastDaySOC with the last SOC value of the previous day
+            if (!dailyStatuses.empty())
+            {
+                lastDaySOC = dailyStatuses.back().currentSOC;
+            }
+
+            // Reset for the next day
+            dayRecords.clear();
+            currentDay = record.day;
+        }
+        dayRecords.push_back(record);
+    }
+
+    // Generate and add the last day's statuses
+    auto lastDayStatuses = generateDailyStatus(dayRecords, lastDaySOC);
+    allDailyStatuses.push_back(lastDayStatuses);
 
     return allDailyStatuses;
 }
