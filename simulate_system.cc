@@ -308,29 +308,21 @@ std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyS
 		// Determine if we should charge this hour
 		 if (selectedEVChargingPolicy == 1){
 			chargeHour = lastp(dailyStatuses, ev_b, hour);
-			//std::cout << "In last" << std::endl;
 		}
 		else if (selectedEVChargingPolicy == 0){
 			 chargeHour = naive(dailyStatuses, ev_b, hour);
-			// std::cout << "In naive" << std::endl;
 		}  else if (selectedEVChargingPolicy == 2){
 			 chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch);
-			 //std::cout << "In mincost" <<  std::endl;
 		} else {
 			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
 		}
-	//	std::cout << "EV Battery SOC before charging decision: " << ev_b << std::endl;
 
 		double maxCharging = 0.0;
 				if (chargeHour == hour)
 			{
 				double available_power = 7.4;
 				maxCharging = calc_max_charging_ev(available_power, ev_b);
-				//ev_b += maxCharging * eta_c_ev * T_u; // Update SOC with charged amount
 			}
-
-		
-		//std::cout << "Final SOC for hour " << hour << ": " << ev_b << std::endl;
 
 		return std::make_tuple(maxCharging, ev_b, chargeHour);
 }
