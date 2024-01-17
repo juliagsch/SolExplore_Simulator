@@ -143,7 +143,7 @@ int mincost(const std::vector<EVStatus> &dailyStatuses, double ev_b, int current
 
 std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuses, int hour, int day, double last_soc)
 {
-		
+		int selectedEVChargingPolicy = 2;
 		double ev_b = 0.0;
 		// If the EV has just returned home, reset the SOC to the current hour's SOC
 	//	std::cout << "Day: " << day << ", Hour: " << hour << ", Last SOC: " << last_soc << std::endl;
@@ -159,16 +159,16 @@ std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuse
 
 		int chargeHour = -1;
 		// Determine if we should charge this hour
-		 if (selectedEVChargingPolicy == EVChargingPolicy::Last){
+		 if (selectedEVChargingPolicy == 1){
 			chargeHour = lastp(dailyStatuses, ev_b, hour);
-			std::cout << "In last" << std::endl;
+			//std::cout << "In last" << std::endl;
 		}
-		else if (selectedEVChargingPolicy == EVChargingPolicy::Naive){
+		else if (selectedEVChargingPolicy == 0){
 			 chargeHour = naive(dailyStatuses, ev_b, hour);
-			 std::cout << "In naive" << std::endl;
-		}  else if (selectedEVChargingPolicy == EVChargingPolicy::MinCost){
+			// std::cout << "In naive" << std::endl;
+		}  else if (selectedEVChargingPolicy == 2){
 			 chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch);
-			 std::cout << "In mincost" <<  std::endl;
+			 //std::cout << "In mincost" <<  std::endl;
 		} else {
 			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
 		}
