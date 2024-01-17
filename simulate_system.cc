@@ -138,14 +138,16 @@ int mincost(const std::vector<EVStatus> &dailyStatuses, double ev_b, int current
 	return -1; // Do not charge if the EV is not at home at t_ch
 }
 
-std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuses, int index, double last_soc)
+std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuses, int hour, int day, double last_soc)
 {
-		int hour = index % 24;
+		
 		double ev_b = 0.0;
 		// If the EV has just returned home, reset the SOC to the current hour's SOC
-		if (!dailyStatuses[index - 1].isAtHome && dailyStatuses[index].isAtHome || index == 0)
+		std::cout << "Day: " << day << ", Hour: " << hour << ", Last SOC: " << last_soc << std::endl;
+
+		if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome || day == 0)
 		{
-			ev_b = dailyStatuses[index].currentSOC;
+			ev_b = dailyStatuses[hour].currentSOC;
 		} else {
 			ev_b = last_soc;
 		}
@@ -161,6 +163,8 @@ std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuse
 		} else {
 			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
 		}
+		std::cout << "EV Battery SOC before charging decision: " << ev_b << std::endl;
+
 		double maxCharging = 0.0;
 				if (chargeHour == hour)
 			{
@@ -171,11 +175,17 @@ std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuse
 				double available_power = 7.4;
 				maxCharging = calc_max_charging_ev(available_power, ev_b);
 				ev_b += maxCharging * eta_c_ev * T_u; // Update SOC with charged amount
+
+				// Print charging details
+				std::cout << "Charging at hour " << hour << ": Max Charging Power: " << maxCharging
+						  << ", Updated SOC: " << ev_b << std::endl;
 			}
 
 		// Update current SOC in EVStatus and carry over to next hour
 		dailyStatuses[hour].currentSOC = ev_b;
 		last_soc = ev_b;
+		std::cout << "Final SOC for hour " << hour << ": " << ev_b << std::endl;
+
 		return std::make_pair(maxCharging, last_soc);
 }
 
@@ -187,9 +197,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 
 	// set the battery
 	double b = b_0*cells*kWh_in_one_cell; //0.5*a2_intercept
-
 	int loss_events = 0;
-
 	double load_deficit = 0;
 	double load_sum = 0;
 
@@ -203,6 +211,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	int index_t_solar;
 	int index_t_load;
 	double last_soc = 32.0;
+	int day = 0;
+	int hour = 0;
 	// loop through each hour 
 	for (int t = start_index; t < end_index; t++) {
 
@@ -213,15 +223,16 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		load_sum += load_trace[index_t_load];
 
 		int index = t - start_index;
+		hour = index % 24;
+		day = index / 24;
 
 		//EV CHARGING 
-
-		
-		std::pair<double, double> chargingResult = simulateEVCharging(allDailyStatuses[index], index, last_soc);
+		std::pair<double, double> chargingResult = simulateEVCharging(allDailyStatuses[day], hour,day, last_soc);
 		double maxCharging = chargingResult.first;
 		last_soc = chargingResult.second;
 
 		double hourly_laod = load_trace[index_t_load] + maxCharging;
+		//double hourly_laod = load_trace[index_t_load] ;
 
 		//---------------------------------------------------------------------------------------------------
 		// first, calculate how much power is available for charging, and how much is needed to discharge
