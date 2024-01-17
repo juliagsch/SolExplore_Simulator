@@ -29,6 +29,7 @@ double static max_soc = 0.8;
 double static min_soc = 0.2;
 double static ev_battery_capacity = 60.0; // kWh
 
+
 double sim(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index,
 				 double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses);
 

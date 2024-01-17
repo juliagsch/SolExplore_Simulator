@@ -1,8 +1,10 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <utility>
 #include "simulate_system.h"
 #include "ev.h"
+#include "common.h" 
 
 using namespace std;
 
@@ -92,6 +94,91 @@ double calc_max_discharging_ev(double power, double ev_b, double min_soc, double
 	return 0;
 }
 
+int naive(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour)
+{
+	// Check if the EV is at home and can be charged
+	if (dailyStatuses[currentHour].isAtHome)
+	{
+		return currentHour; // Start charging
+	}
+	return -1; // Do not charge if the EV is not at home
+}
+
+int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour)
+{
+	// Find the next departure hour
+	int next_dept = -1;
+	for (int hour = currentHour; hour < 24; ++hour)
+	{
+		if (!dailyStatuses[hour].isAtHome)
+		{
+			next_dept = hour;
+			break;
+		}
+	}
+
+	if (next_dept == -1)
+	{
+		return -1; // No trips remaining today
+	}
+
+	double diff = ev_battery_capacity - ev_b;
+	int hours_needed = ceil(diff / alpha_c_ev);
+	int latest_t = next_dept - hours_needed;
+	return latest_t;
+}
+
+int mincost(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour, int t_ch)
+{
+	// Check if the EV is at home at the lowest cost hour
+	if (dailyStatuses[t_ch].isAtHome)
+	{
+		return t_ch; // Start charging
+	}
+	return -1; // Do not charge if the EV is not at home at t_ch
+}
+
+std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuses, int index, double last_soc)
+{
+		int hour = index % 24;
+		double ev_b = 0.0;
+		// If the EV has just returned home, reset the SOC to the current hour's SOC
+		if (!dailyStatuses[index - 1].isAtHome && dailyStatuses[index].isAtHome || index == 0)
+		{
+			ev_b = dailyStatuses[index].currentSOC;
+		} else {
+			ev_b = last_soc;
+		}
+
+		int chargeHour = -1;
+		// Determine if we should charge this hour
+		if (selectedEVChargingPolicy == EVChargingPolicy::Naive){
+			 chargeHour = naive(dailyStatuses, ev_b, hour);
+		} else if (selectedEVChargingPolicy == EVChargingPolicy::Last){
+			 chargeHour = lastp(dailyStatuses, ev_b, hour);
+		} else if (selectedEVChargingPolicy == EVChargingPolicy::MinCost){
+			 chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch);
+		} else {
+			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
+		}
+		double maxCharging = 0.0;
+				if (chargeHour == hour)
+			{
+				// Simulate charging
+				//TODO: here add how much power is available to charge the EV in one hour and call calc_max_charging_Ev with that input
+
+				// Assuming charging rate of 7.4 kW. 
+				double available_power = 7.4;
+				maxCharging = calc_max_charging_ev(available_power, ev_b);
+				ev_b += maxCharging * eta_c_ev * T_u; // Update SOC with charged amount
+			}
+
+		// Update current SOC in EVStatus and carry over to next hour
+		dailyStatuses[hour].currentSOC = ev_b;
+		last_soc = ev_b;
+		return std::make_pair(maxCharging, last_soc);
+}
+
 // call it with a specific battery and PV size and want to compute the loss
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses)
 {
@@ -115,6 +202,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	double max_d = 0.0;
 	int index_t_solar;
 	int index_t_load;
+	double last_soc = 32.0;
 	// loop through each hour 
 	for (int t = start_index; t < end_index; t++) {
 
@@ -124,11 +212,21 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 
 		load_sum += load_trace[index_t_load];
 
-		// TODO: MODIFY HERE TO ADD EV CHARGING
+		int index = t - start_index;
 
+		//EV CHARGING 
+
+		
+		std::pair<double, double> chargingResult = simulateEVCharging(allDailyStatuses[index], index, last_soc);
+		double maxCharging = chargingResult.first;
+		last_soc = chargingResult.second;
+
+		double hourly_laod = load_trace[index_t_load] + maxCharging;
+
+		//---------------------------------------------------------------------------------------------------
 		// first, calculate how much power is available for charging, and how much is needed to discharge
-		c = fmax(solar_trace[index_t_solar]*pv - load_trace[index_t_load],0);
-		d = fmax(load_trace[index_t_load] - solar_trace[index_t_solar]*pv, 0);
+		c = fmax(solar_trace[index_t_solar]*pv - hourly_laod,0);
+		d = fmax(hourly_laod- solar_trace[index_t_solar]*pv, 0);
 
 		// constrain the power
 		max_c = fmin(calc_max_charging(c,b), alpha_c);
