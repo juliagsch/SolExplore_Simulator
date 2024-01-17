@@ -54,12 +54,47 @@ double calc_max_discharging(double power, double b_prev) {
 	return 0;
 }
 
+double calc_max_charging_ev(double power, double ev_b)
+{
+	double step = power / 30.0;
+	double upper_lim = max_soc * ev_battery_capacity;
 
-// Note: sim_year calls procedures calc_max_charging and calc_max_discharging.
-// You could potentially speed up the computation by expanding these functions into sim_year
-// to avoid procedure calls in this inner loop.
-// call it with a specific battery and PV size and want to compute the loss 
-double sim(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0) {
+	for (double c = power; c >= 0; c -= step)
+	{
+		// Update battery SOC
+		ev_b = ev_b + c * eta_c_ev * T_u;
+
+		// Check if the updated SOC is within the upper limit
+		if (ev_b <= upper_lim)
+		{
+			return c;
+		}
+	}
+	return 0;
+}
+
+double calc_max_discharging_ev(double power, double ev_b, double min_soc, double ev_battery_size)
+{
+	double step = power / 30.0;
+	double lower_lim = min_soc * ev_battery_capacity;
+
+	for (double d = power; d >= 0; d -= step)
+	{
+		// Update battery SOC
+		ev_b = ev_b - d * eta_d_ev * T_u;
+
+		// Check if the updated SOC is above the lower limit
+		if (ev_b >= lower_lim)
+		{
+			return d;
+		}
+	}
+	return 0;
+}
+
+// call it with a specific battery and PV size and want to compute the loss
+double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses)
+{
 
 	update_parameters(cells);
 
@@ -83,13 +118,13 @@ double sim(vector <double> &load_trace, vector <double> &solar_trace, int start_
 	// loop through each hour 
 	for (int t = start_index; t < end_index; t++) {
 
-		//updateEVStatus(evStatus, t);
-
 		// wrap around to the start of the trace if we hit the end.
 		index_t_solar = t % trace_length_solar;
 		index_t_load = t % trace_length_load;
 
 		load_sum += load_trace[index_t_load];
+
+		// TODO: MODIFY HERE TO ADD EV CHARGING
 
 		// first, calculate how much power is available for charging, and how much is needed to discharge
 		c = fmax(solar_trace[index_t_solar]*pv - load_trace[index_t_load],0);
@@ -98,6 +133,9 @@ double sim(vector <double> &load_trace, vector <double> &solar_trace, int start_
 		// constrain the power
 		max_c = fmin(calc_max_charging(c,b), alpha_c);
 		max_d = fmin(calc_max_discharging(d,b), alpha_d);
+
+
+		// TODO: MODIFY HERE TO ADD OPERATING POLICIES
 
 		b = b + max_c*eta_c*T_u - max_d*eta_d*T_u;
 
@@ -117,10 +155,9 @@ double sim(vector <double> &load_trace, vector <double> &solar_trace, int start_
 	}
 }
 
-
 // Run simulation for provides solar and load trace to find cheapest combination of
 // load and solar that can meet the epsilon target
-vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double b_0) {
+vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses) {
 
 	// first, find the lowest value of cells that will get us epsilon loss when the PV is maximized
 	// use binary search
@@ -134,7 +171,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 
 		mid_cells = (cells_L + cells_U) / 2.0;
 		//simulate with PV max first 
-		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0);
+		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses);
 
 		//cout << "sim result with " << a2_intercept << " kWh and " << pv_max << " pv: " << loss << endl;
 		if (loss > epsilon) {
@@ -166,7 +203,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 		double loss = 0;
 		while (true) {
 			
-			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0);
+			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses);
 
 			if (loss < epsilon) {
 				//works

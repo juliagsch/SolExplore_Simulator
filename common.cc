@@ -203,5 +203,51 @@ int process_input(char** argv, bool process_metric_input) {
 		return 1;
 	}
 
-    return 0;
-}
+    // Process policy inputs
+    std::string evChargingPolicyInput = argv[++i]; 
+    std::string operationPolicyInput = argv[++i];
+    EVChargingPolicy selectedEVChargingPolicy = EVChargingPolicy::Naive;
+    OperationPolicy selectedOperationPolicy = OperationPolicy::Unidirectional;
+
+    if (evChargingPolicyInput == "naive")
+    {
+        selectedEVChargingPolicy = EVChargingPolicy::Naive;
+    }
+    else if (evChargingPolicyInput == "last")
+    {
+        selectedEVChargingPolicy = EVChargingPolicy::Last;
+    }
+    else if (evChargingPolicyInput == "min_cost")
+    {
+        selectedEVChargingPolicy = EVChargingPolicy::MinCost;
+    }
+    else
+    {
+        std::cerr << "Invalid EV charging policy input." << std::endl;
+        return 1;
+    }
+
+    if (operationPolicyInput == "unidirectional")
+    {
+        selectedOperationPolicy = OperationPolicy::Unidirectional;
+    }
+    else if (operationPolicyInput == "most_sustainable")
+    {
+        selectedOperationPolicy = OperationPolicy::MostSustainable;
+    }
+    else if (operationPolicyInput == "r_degradation")
+    {
+        selectedOperationPolicy = OperationPolicy::RDegradation;
+    }
+    else if (operationPolicyInput == "min_storage")
+    {
+        selectedOperationPolicy = OperationPolicy::MinStorage;
+    }
+    else
+    {
+        std::cerr << "Invalid operation policy input." << std::endl;
+        return 1;
+    }
+
+        return 0;
+    }
