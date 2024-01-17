@@ -72,7 +72,8 @@ enum class OperationPolicy
 	MinStorage
 };
 
-static EVChargingPolicy selectedEVChargingPolicy;
-static OperationPolicy selectedOperationPolicy;
+ extern EVChargingPolicy selectedEVChargingPolicy;
+ extern OperationPolicy selectedOperationPolicy;
+
 
 #endif

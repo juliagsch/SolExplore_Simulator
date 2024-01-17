@@ -206,20 +206,19 @@ int process_input(char** argv, bool process_metric_input) {
     // Process policy inputs
     std::string evChargingPolicyInput = argv[++i]; 
     std::string operationPolicyInput = argv[++i];
-    EVChargingPolicy selectedEVChargingPolicy = EVChargingPolicy::Naive;
-    OperationPolicy selectedOperationPolicy = OperationPolicy::Unidirectional;
+   // OperationPolicy selectedOperationPolicy = OperationPolicy::Unidirectional;
 
-    if (evChargingPolicyInput == "naive")
+    if (evChargingPolicyInput == "min_cost")
     {
-        selectedEVChargingPolicy = EVChargingPolicy::Naive;
+        selectedEVChargingPolicy = EVChargingPolicy::MinCost;
     }
     else if (evChargingPolicyInput == "last")
     {
         selectedEVChargingPolicy = EVChargingPolicy::Last;
     }
-    else if (evChargingPolicyInput == "min_cost")
+    else if (evChargingPolicyInput == "naive")
     {
-        selectedEVChargingPolicy = EVChargingPolicy::MinCost;
+        selectedEVChargingPolicy = EVChargingPolicy::Naive;
     }
     else
     {

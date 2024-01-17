@@ -60,14 +60,17 @@ double calc_max_charging_ev(double power, double ev_b)
 {
 	double step = power / 30.0;
 	double upper_lim = max_soc * ev_battery_capacity;
+	double ev_b_m = 0.0;
 
 	for (double c = power; c >= 0; c -= step)
 	{
 		// Update battery SOC
-		ev_b = ev_b + c * eta_c_ev * T_u;
+		//std::cout << "EV_b before update: " << ev_b << "c: " << c << std::endl;
+		ev_b_m = ev_b + c * eta_c_ev * T_u;
+		//std::cout << "EV_b after update: " << ev_b << std::endl;
 
 		// Check if the updated SOC is within the upper limit
-		if (ev_b <= upper_lim)
+		if (ev_b_m <= upper_lim)
 		{
 			return c;
 		}
@@ -143,10 +146,12 @@ std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuse
 		
 		double ev_b = 0.0;
 		// If the EV has just returned home, reset the SOC to the current hour's SOC
-		std::cout << "Day: " << day << ", Hour: " << hour << ", Last SOC: " << last_soc << std::endl;
+	//	std::cout << "Day: " << day << ", Hour: " << hour << ", Last SOC: " << last_soc << std::endl;
 
-		if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome || day == 0)
+		if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome && hour != 0)
 		{
+				//std::cout << "HERE and read:  " << dailyStatuses[hour].currentSOC <<  std::endl;
+
 			ev_b = dailyStatuses[hour].currentSOC;
 		} else {
 			ev_b = last_soc;
@@ -154,16 +159,20 @@ std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuse
 
 		int chargeHour = -1;
 		// Determine if we should charge this hour
-		if (selectedEVChargingPolicy == EVChargingPolicy::Naive){
+		 if (selectedEVChargingPolicy == EVChargingPolicy::Last){
+			chargeHour = lastp(dailyStatuses, ev_b, hour);
+			std::cout << "In last" << std::endl;
+		}
+		else if (selectedEVChargingPolicy == EVChargingPolicy::Naive){
 			 chargeHour = naive(dailyStatuses, ev_b, hour);
-		} else if (selectedEVChargingPolicy == EVChargingPolicy::Last){
-			 chargeHour = lastp(dailyStatuses, ev_b, hour);
-		} else if (selectedEVChargingPolicy == EVChargingPolicy::MinCost){
+			 std::cout << "In naive" << std::endl;
+		}  else if (selectedEVChargingPolicy == EVChargingPolicy::MinCost){
 			 chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch);
+			 std::cout << "In mincost" <<  std::endl;
 		} else {
 			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
 		}
-		std::cout << "EV Battery SOC before charging decision: " << ev_b << std::endl;
+	//	std::cout << "EV Battery SOC before charging decision: " << ev_b << std::endl;
 
 		double maxCharging = 0.0;
 				if (chargeHour == hour)
@@ -176,15 +185,17 @@ std::pair<double, double> simulateEVCharging(std::vector<EVStatus> &dailyStatuse
 				maxCharging = calc_max_charging_ev(available_power, ev_b);
 				ev_b += maxCharging * eta_c_ev * T_u; // Update SOC with charged amount
 
-				// Print charging details
-				std::cout << "Charging at hour " << hour << ": Max Charging Power: " << maxCharging
-						  << ", Updated SOC: " << ev_b << std::endl;
+				if(maxCharging > 0)
+				{
+				//	std::cout << "Charging at hour " << hour << "day : " << day << ": Max Charging Power: " << maxCharging << std::endl;
+				}
+						//  << ", Updated SOC: " << ev_b << std::endl;
 			}
 
 		// Update current SOC in EVStatus and carry over to next hour
 		dailyStatuses[hour].currentSOC = ev_b;
 		last_soc = ev_b;
-		std::cout << "Final SOC for hour " << hour << ": " << ev_b << std::endl;
+		//std::cout << "Final SOC for hour " << hour << ": " << ev_b << std::endl;
 
 		return std::make_pair(maxCharging, last_soc);
 }
@@ -224,12 +235,14 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 
 		int index = t - start_index;
 		hour = index % 24;
-		day = index / 24;
+		day =  index / 24;
+		int day2 = day +1;
 
 		//EV CHARGING 
 		std::pair<double, double> chargingResult = simulateEVCharging(allDailyStatuses[day], hour,day, last_soc);
 		double maxCharging = chargingResult.first;
 		last_soc = chargingResult.second;
+		//std::cout << "Day: " << day2 << ", Hour: " << hour << ", Last SOC: " << last_soc << "EV Charging: " << maxCharging << std::endl;
 
 		double hourly_laod = load_trace[index_t_load] + maxCharging;
 		//double hourly_laod = load_trace[index_t_load] ;
