@@ -248,7 +248,7 @@ int process_input(char** argv, bool process_metric_input) {
 #endif
 
     std::set<std::string> validEVChargingOptions = {"naive", "last", "min_cost"};
-    std::set<std::string> validOperationPolicyOptions = {"unidirectional", "min_storage", "most_sustainable"};
+    std::set<std::string> validOperationPolicyOptions = {"unidirectional", "min_storage", "most_sustainable", "maximise_solar_charging"};
 
     // Read EV_charging and Operation_policy as strings
     std::string evChargingInput = argv[++i];      
