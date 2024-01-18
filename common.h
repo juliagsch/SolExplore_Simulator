@@ -28,9 +28,16 @@ extern double pv_min;
 extern double pv_max;
 extern double pv_step; // search in steps of x kW
 
+extern double min_soc;
+extern double max_soc;
+extern double ev_battery_capacity;
+extern int t_ch;
+extern double charging_rate;
 
+// common.h
+extern std::string EV_charging;
+extern std::string Operation_policy;
 
-// CONSTANTS
 
 // defines the number of samples, set via command line input
 int static number_of_chunks = 100;
@@ -40,7 +47,6 @@ double static kWh_in_one_cell = 0.011284;
 double static num_cells_steps = 400; // search in total of n steps for cells
 double static num_pv_steps = 350; // search in total of n steps for pv
 
-int static t_ch = 3; // cheapest charging time 
 
 
 struct SimulationResult {

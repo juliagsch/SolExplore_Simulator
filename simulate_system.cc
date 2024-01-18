@@ -14,6 +14,7 @@ double load_sum = 0;
 
 
 
+
 void update_parameters(double n) {
 
 	num_cells = n;
@@ -111,7 +112,7 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 	
 
 	double diff = ev_battery_capacity*max_soc - ev_b;
-	int hours_needed = ceil(diff / alpha_c_ev);
+	int hours_needed = ceil(diff / charging_rate);
 	if (hours_needed == 0){
 		return -1; // EV is already charged
 
@@ -170,7 +171,7 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 
 std::pair<double, double> minstorage_static(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, bool is_home)
 {
-	double max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), alpha_d_ev);
+	double max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), charging_rate);
 
 	if ( z == true)
 	{
@@ -220,6 +221,7 @@ std::pair<double, double>mostSustainable_static(double b, double ev_b, double c,
 	// charge: 1=stationary, 2= ev, 3 = verloren
 	//  discharge: 1= stationary, 2 = ev, 3= grid
 	double max_c_ev;
+	//epsilon = epsilon+1;
 	double max_d_ev;
 	if(z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
@@ -235,7 +237,7 @@ std::pair<double, double>mostSustainable_static(double b, double ev_b, double c,
 		double res = d - max_d;
 		if (res > 0 && z == false && is_home == true)
 		{
-			max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), alpha_d_ev);
+			max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), charging_rate);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
 			res = res - max_d_ev;
 		}
@@ -252,7 +254,6 @@ std::pair<double, double>mostSustainable_static(double b, double ev_b, double c,
 
 std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyStatuses, int hour, int day, double last_soc, bool charged_last_hour)
 {
-		int selectedEVChargingPolicy = 1;
 		double ev_b = 0.0;
 
 		if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome && hour != 0)
@@ -264,21 +265,24 @@ std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyS
 
 		int chargeHour = -1;
 		// Determine if we should charge this hour
-		 if (selectedEVChargingPolicy == 1){
+		if (EV_charging == "last"){
 			chargeHour = lastp(dailyStatuses, ev_b, hour);
 		}
-		else if (selectedEVChargingPolicy == 0){
-			 chargeHour = naive(dailyStatuses, ev_b, hour);
-		}  else if (selectedEVChargingPolicy == 2){
-			 chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch, charged_last_hour);
-		} else {
+		else if (EV_charging == "naive"){
+			chargeHour = naive(dailyStatuses, ev_b, hour);
+		}
+		else if (EV_charging == "min_cost"){
+			chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch, charged_last_hour);
+		}
+		else
+		{
 			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
 		}
 
 		double maxCharging = 0.0;
 				if (chargeHour == hour)
 			{
-				double available_power = 7.4;
+				double available_power = charging_rate * T_u;
 				maxCharging = calc_max_charging_ev(available_power, ev_b);
 			}
 			if (maxCharging == 0.0)
@@ -290,7 +294,7 @@ std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyS
 }
 
 // call it with a specific battery and PV size and want to compute the loss
-double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses)
+double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc)
 {
 
 	update_parameters(cells);
@@ -365,10 +369,22 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		std::cout << "Before unidirectional - ev_b: " << ev_b << ", b: " << b << ", c: " << c << ", d: " << d << ", load_deficit: " << load_deficit << std::endl;
 
 		double ev_b_before = ev_b;
+		std::pair<double, double> operationResult;
 
-		//std::pair<double, double> operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging);
-		//std::pair<double, double> operationResult = minstorage_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, ishome);
-		std::pair<double, double> operationResult = mostSustainable_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home);
+			if (Operation_policy == "unidirectional")
+		{
+			operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging);
+		}
+		else if (Operation_policy == "min_storage"){
+			operationResult = minstorage_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home);
+		}
+		else if (Operation_policy == "most_sustainable"){
+			operationResult = mostSustainable_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home);
+		}
+		else{
+			std::cout << "ERROR: Invalid operation policy selected" << std::endl;
+		}
+	
 		// maximise solar charging 
 
 		ev_b = operationResult.first;
@@ -393,7 +409,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	}
 }
 
-vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses) {
+vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc) {
 
 	// first, find the lowest value of cells that will get us epsilon loss when the PV is maximized
 	// use binary search
@@ -407,7 +423,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 
 		mid_cells = (cells_L + cells_U) / 2.0;
 		//simulate with PV max first 
-		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses);
+		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc);
 
 		//cout << "sim result with " << a2_intercept << " kWh and " << pv_max << " pv: " << loss << endl;
 		if (loss > epsilon) {
@@ -439,7 +455,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 		double loss = 0;
 		while (true) {
 			
-			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses);
+			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses, max_soc, min_soc);
 
 			if (loss < epsilon) {
 				//works

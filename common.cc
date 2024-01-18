@@ -5,6 +5,8 @@
 #include <vector>
 #include <iostream>
 #include <climits>
+#include <string>
+#include <set>
 
 #include "common.h"
 
@@ -17,6 +19,16 @@ double cells_step; // search in step of x cells
 double pv_min;
 double pv_max;
 double pv_step; // search in steps of x kW
+
+double max_soc;
+double min_soc;
+
+double ev_battery_capacity = 40.0;
+int t_ch = 3;
+double charging_rate = 7.4;
+// common.cc
+std::string EV_charging = "naive";               // Default policy
+std::string Operation_policy = "unidirectional"; // Default policy
 
 double epsilon;
 double confidence;
@@ -203,7 +215,62 @@ int process_input(char** argv, bool process_metric_input) {
 		return 1;
 	}
 
-    
+    string max_soc_string = argv[++i];
+    max_soc = stod(max_soc_string);
+
+#ifdef DEBUG
+    cout << "max_soc_string = " << max_soc_string << ", max_soc = " << max_soc << endl;
+#endif
+
+    string min_soc_string = argv[++i];
+    min_soc = stod(min_soc_string);
+
+#ifdef DEBUG
+    cout << "min_soc_string = " << min_soc_string << ", min_soc = " << min_soc << endl;
+#endif
+    string ev_battery_capacity_string = argv[++i];
+    ev_battery_capacity = stod(ev_battery_capacity_string);
+
+#ifdef DEBUG
+    cout << "ev_battery_capacity_string = " << ev_battery_capacity_string << ", ev_battery_capacity = " << ev_battery_capacity << endl;
+#endif
+    string t_ch_string = argv[++i];
+    t_ch = stod(t_ch_string);
+
+#ifdef DEBUG
+    cout << "t_ch_string = " << t_ch_string << ", t_ch = " << t_ch << endl;
+#endif
+    string charging_rate_string = argv[++i];
+    charging_rate = stod(charging_rate_string);
+
+#ifdef DEBUG
+    cout << "charging_rate_string = " << charging_rate_string << ", charging_rate = " << charging_rate << endl;
+#endif
+
+    std::set<std::string> validEVChargingOptions = {"naive", "last", "min_cost"};
+    std::set<std::string> validOperationPolicyOptions = {"unidirectional", "min_storage", "most_sustainable"};
+
+    // Read EV_charging and Operation_policy as strings
+    std::string evChargingInput = argv[++i];      
+    std::string operationPolicyInput = argv[++i]; 
+
+    // Check if EV_charging input is valid
+    if (validEVChargingOptions.find(evChargingInput) == validEVChargingOptions.end())
+    {
+        std::cerr << "Invalid EV charging policy: " << evChargingInput << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+
+    // Check if Operation_policy input is valid
+    if (validOperationPolicyOptions.find(operationPolicyInput) == validOperationPolicyOptions.end())
+    {
+        std::cerr << "Invalid Operation policy: " << operationPolicyInput << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+
+    // Assign the valid inputs
+    EV_charging = evChargingInput;
+    Operation_policy = operationPolicyInput;
 
     return 0;
-    }
+}
