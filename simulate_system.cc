@@ -168,7 +168,7 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 	return std::make_pair(ev_b, b);
 }
 
-std::pair<double, double> minstorage_static(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging)
+std::pair<double, double> minstorage_static(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, bool is_home)
 {
 	double max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), alpha_d_ev);
 
@@ -183,7 +183,7 @@ std::pair<double, double> minstorage_static(double b, double ev_b, double c, dou
 	}
 	if (d > 0)
 		{
-			if (z == true)
+			if (z == true || is_home == false)
 			{
 				// cannot discharge ev
 				b = b - max_d * eta_d * T_u;
@@ -215,7 +215,7 @@ std::pair<double, double> minstorage_static(double b, double ev_b, double c, dou
 	return std::make_pair(ev_b, b);
 }
 
-std::pair<double, double>mostSustainable_static(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging)
+std::pair<double, double>mostSustainable_static(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, bool is_home)
 {
 	// charge: 1=stationary, 2= ev, 3 = verloren
 	//  discharge: 1= stationary, 2 = ev, 3= grid
@@ -233,7 +233,7 @@ std::pair<double, double>mostSustainable_static(double b, double ev_b, double c,
 	{
 		b = b - max_d * eta_d * T_u;
 		double res = d - max_d;
-		if (res > 0 && z == false)
+		if (res > 0 && z == false && is_home == true)
 		{
 			max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), alpha_d_ev);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
@@ -343,10 +343,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		double ev_b = std::get<1>(chargingResult);
 		int chargingHour = std::get<2>(chargingResult);
 
-		
+		bool is_home = allDailyStatuses[day][hour].isAtHome;
 
-		std::cout << "simulateEVCharging returned - maxCharging: " << maxCharging
-				  << ", ev_b: " << ev_b << ", chargingHour: " << chargingHour << std::endl;
+		std::cout << "simulateEVCharging returned - maxCharging: " << maxCharging << ", ev_b: " << ev_b << ", chargingHour: " << chargingHour << std::endl;
 
 		if(chargingHour == hour){
 			z = true;
@@ -368,8 +367,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		double ev_b_before = ev_b;
 
 		//std::pair<double, double> operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging);
-		//std::pair<double, double> operationResult = minstorage_static(b, ev_b, c, d, z, max_c, max_d, maxCharging);
-		std::pair<double, double> operationResult = mostSustainable_static(b, ev_b, c, d, z, max_c, max_d, maxCharging);
+		//std::pair<double, double> operationResult = minstorage_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, ishome);
+		std::pair<double, double> operationResult = mostSustainable_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home);
 		// maximise solar charging 
 
 		ev_b = operationResult.first;
