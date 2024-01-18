@@ -374,7 +374,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		hour = index % 24;
 		day =  index / 24;
 		int day2 = day +1;
-		std::cout << "Day: " << day2 << ", Hour: " << hour << std::endl;
+		//std::cout << "Day: " << day2 << ", Hour: " << hour << std::endl;
 
 		std::tuple<double, double, int> chargingResult = simulateEVCharging(allDailyStatuses[day], hour, day, last_soc, charged_last_hour);
 		double maxCharging = std::get<0>(chargingResult);
@@ -383,7 +383,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 
 		bool is_home = allDailyStatuses[day][hour].isAtHome;
 
-		std::cout << "simulateEVCharging returned - maxCharging: " << maxCharging << ", ev_b: " << ev_b << ", chargingHour: " << chargingHour << std::endl;
+		//std::cout << "simulateEVCharging returned - maxCharging: " << maxCharging << ", ev_b: " << ev_b << ", chargingHour: " << chargingHour << std::endl;
 
 		if(chargingHour == hour){
 			z = true;
@@ -406,7 +406,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		max_d2 = fmin(calc_max_discharging(d2, b), alpha_d);
 
 		//std::cout << "Before unidirectional - ev_b: " << ev_b << ", b: " << b << ", c: " << c << ", d: " << d << ", load_deficit: " << load_deficit << std::endl;
-		std::cout << "Before mas solar - ev_b: " << ev_b << ", b: " << b << ", c2: " << c2 << ", d2: " << d2 << ", max_ c2: " << max_c2 << ", max_d2: " << max_d2 << ", load_deficit: " << load_deficit << std::endl;
+		//std::cout << "Before mas solar - ev_b: " << ev_b << ", b: " << b << ", c2: " << c2 << ", d2: " << d2 << ", max_ c2: " << max_c2 << ", max_d2: " << max_d2 << ", load_deficit: " << load_deficit << std::endl;
 
 		double ev_b_before = ev_b;
 		std::pair<double, double> operationResult;
@@ -438,7 +438,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		} else {
 			charged_last_hour = false;
 		}
-		std::cout << "After unidirectional - ev_b: " << ev_b << ", b: " << b << ", load_deficit: " << load_deficit << std::endl;
+		//std::cout << "After unidirectional - ev_b: " << ev_b << ", b: " << b << ", load_deficit: " << load_deficit << std::endl;
 	}
 
 	if (metric == 0) {
