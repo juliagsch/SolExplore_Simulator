@@ -36,37 +36,16 @@ SimulationResult run_simulations(vector<double> &load, vector<double> &solar, in
 	// compute all sizing curves
 	for (int chunk_num = 0; chunk_num < number_of_chunks; chunk_num += 1) {
 
-		int chunk_start = rand() % max(solar.size(),load.size());
+		int chunk_start = rand() % max(solar.size()%24,load.size()%24);
+		int Ev_start = rand() % evRecords.size();
 		int chunk_end = chunk_start + t_chunk_size;
 
-		vector <SimulationResult> sr = simulate(load, solar, chunk_start, chunk_end, 0, evRecords, allDailyStatuses, max_soc, min_soc);
+		vector<SimulationResult> sr = simulate(load, solar, chunk_start, chunk_end, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 		//saves the sizing curve for this sample 
 		results.push_back(sr);
 
 	}
-{
 
-	// set random seed to a specific value if you want consistency in results
-	srand(10);
-
-	// get number of timeslots in each chunk
-	//zb 100 days a 24h if we have hourly data in the input files 
-	int t_chunk_size = chunk_size*(24/T_u);
-
-	vector <vector<SimulationResult> > results;
-
-	// get random start times and run simulation on this chunk of data
-	// compute all sizing curves
-	for (int chunk_num = 0; chunk_num < number_of_chunks; chunk_num += 1) {
-
-		int chunk_start = rand() % max(solar.size(),load.size());
-		int chunk_end = chunk_start + t_chunk_size;
-
-		vector <SimulationResult> sr = simulate(load, solar, chunk_start, chunk_end, 0, evRecords, allDailyStatuses, max_soc, min_soc);
-		//saves the sizing curve for this sample 
-		results.push_back(sr);
-
-	}
 
 #ifdef DEBUG
 	// print all of the curves
@@ -84,7 +63,7 @@ SimulationResult run_simulations(vector<double> &load, vector<double> &solar, in
 	// calculate the chebyshev curves, find the cheapest system along their upper envelope, and return it
 	// returns the optimal result 
 	return calculate_sample_bound(results, epsilon, confidence);
-}
+
 }
 
 int main(int argc, char ** argv) 

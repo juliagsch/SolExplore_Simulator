@@ -330,7 +330,7 @@ std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyS
 }
 
 // call it with a specific battery and PV size and want to compute the loss
-double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc)
+double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
 {
 
 	update_parameters(cells);
@@ -359,6 +359,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	int day = 0;
 	int hour = 0;
 	bool charged_last_hour = false;
+	int EV_index = Ev_start;
 	
 	// loop through each hour 
 	for (int t = start_index; t < end_index; t++) {
@@ -367,6 +368,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		// wrap around to the start of the trace if we hit the end.
 		index_t_solar = t % trace_length_solar;
 		index_t_load = t % trace_length_load;
+		EV_index = EV_index % 365;
+		cout << "EV_index: " << EV_index << endl;
 
 		load_sum += load_trace[index_t_load];
 
@@ -376,7 +379,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		int day2 = day +1;
 		//std::cout << "Day: " << day2 << ", Hour: " << hour << std::endl;
 
-		std::tuple<double, double, int> chargingResult = simulateEVCharging(allDailyStatuses[day], hour, day, last_soc, charged_last_hour);
+		std::tuple<double, double, int> chargingResult = simulateEVCharging(allDailyStatuses[EV_index], hour, day, last_soc, charged_last_hour);
 		double maxCharging = std::get<0>(chargingResult);
 		double ev_b = std::get<1>(chargingResult);
 		int chargingHour = std::get<2>(chargingResult);
@@ -439,6 +442,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			charged_last_hour = false;
 		}
 		//std::cout << "After unidirectional - ev_b: " << ev_b << ", b: " << b << ", load_deficit: " << load_deficit << std::endl;
+		EV_index = EV_index +1;
 	}
 
 	if (metric == 0) {
@@ -450,7 +454,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	}
 }
 
-vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc) {
+vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start) {
 
 	// first, find the lowest value of cells that will get us epsilon loss when the PV is maximized
 	// use binary search
@@ -464,7 +468,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 
 		mid_cells = (cells_L + cells_U) / 2.0;
 		//simulate with PV max first 
-		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc);
+		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 
 		//cout << "sim result with " << a2_intercept << " kWh and " << pv_max << " pv: " << loss << endl;
 		if (loss > epsilon) {
@@ -496,7 +500,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 		double loss = 0;
 		while (true) {
 			
-			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses, max_soc, min_soc);
+			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 
 			if (loss < epsilon) {
 				//works
