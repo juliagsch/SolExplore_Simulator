@@ -29,6 +29,7 @@ double charging_rate = 7.4;
 // common.cc
 std::string EV_charging = "naive";               // Default policy
 std::string Operation_policy = "unidirectional"; // Default policy
+std:: string path_to_ev_data ;
 
 double epsilon;
 double confidence;
@@ -250,27 +251,31 @@ int process_input(char** argv, bool process_metric_input) {
     std::set<std::string> validEVChargingOptions = {"naive", "last", "min_cost"};
     std::set<std::string> validOperationPolicyOptions = {"unidirectional", "min_storage", "most_sustainable", "maximise_solar_charging"};
 
-    // Read EV_charging and Operation_policy as strings
     std::string evChargingInput = argv[++i];      
     std::string operationPolicyInput = argv[++i]; 
 
-    // Check if EV_charging input is valid
     if (validEVChargingOptions.find(evChargingInput) == validEVChargingOptions.end())
     {
         std::cerr << "Invalid EV charging policy: " << evChargingInput << std::endl;
         exit(EXIT_FAILURE); 
     }
 
-    // Check if Operation_policy input is valid
     if (validOperationPolicyOptions.find(operationPolicyInput) == validOperationPolicyOptions.end())
     {
         std::cerr << "Invalid Operation policy: " << operationPolicyInput << std::endl;
         exit(EXIT_FAILURE); 
     }
 
-    // Assign the valid inputs
     EV_charging = evChargingInput;
     Operation_policy = operationPolicyInput;
+
+    string path_to_ev_data_string = argv[++i];
+    path_to_ev_data = path_to_ev_data_string;
+   
+
+#ifdef DEBUG
+    cout << " path_to_ev_data = " << path_to_ev_data << endl;
+#endif
 
     return 0;
 }

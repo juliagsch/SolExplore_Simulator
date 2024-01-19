@@ -33,6 +33,7 @@ extern double max_soc;
 extern double ev_battery_capacity;
 extern int t_ch;
 extern double charging_rate;
+extern std::string path_to_ev_data;
 
 // common.h
 extern std::string EV_charging;

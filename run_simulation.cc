@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
 	}
 
 	// Read EV data
-	std::vector<EVRecord> evRecords = readEVData("ev.csv");
+	std::vector<EVRecord> evRecords = readEVData(path_to_ev_data);
 
 	// Check if EV data was read successfully
 	if (evRecords.empty())
@@ -108,9 +108,9 @@ int main(int argc, char ** argv)
 		std::cerr << "Error reading EV data or no records found" << std::endl;
 		return 1; // Or handle the error as appropriate
 	}
-
-	// Initialize EVStatus
-	EVStatus evStatus;
+	
+		// Initialize EVStatus
+		EVStatus evStatus;
 	printEVRecords(evRecords);
 
 	// Generate all daily statuses
