@@ -94,6 +94,7 @@ double calc_max_discharging_ev(double power, double ev_b, double min_soc, double
 int naive(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour)
 {
 	// Check if the EV is at home and can be charged
+	// TODO: improve this 0.2 
 	if (dailyStatuses[currentHour].isAtHome && ev_b  < (max_soc*ev_battery_capacity - 0.2))
 	{
 		return currentHour; // Start charging
@@ -108,7 +109,9 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 	if (dailyStatuses[currentHour].isAtHome && ev_b  < (max_soc*ev_battery_capacity - 0.1)){
 		next_dept = convertTimeToHour(dailyStatuses[currentHour].nextDepartureTime);
 	}
-	
+	if (next_dept == -1){
+		return -1; 
+	}
 
 	double diff = ev_battery_capacity*max_soc - ev_b;
 	int hours_needed = ceil(diff / charging_rate);
@@ -123,7 +126,7 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 int mincost(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour, int t_ch, bool charged_last_hour)
 {
 	// Check if the EV is at home at the lowest cost hour
-	if (charged_last_hour && (ev_b < (max_soc * ev_battery_capacity - 0.1)))
+	if (charged_last_hour && (ev_b < (max_soc * ev_battery_capacity - 0.1)) && dailyStatuses[currentHour].isAtHome)
 	{
 		return currentHour; // Start charging
 	}
@@ -132,8 +135,6 @@ int mincost(const std::vector<EVStatus> &dailyStatuses, double ev_b, int current
 		return t_ch; // Start charging
 	}
 	 
-
-
 	return -1; // Do not charge if the EV is not at home at t_ch
 }
 
@@ -141,25 +142,13 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 {
 	if(z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
-		
-		if(c > 0){
-			max_c = fmin(calc_max_charging(c, b), alpha_c);
-			b = b + max_c * eta_c * T_u;
-		}
 	}
-
-	
-	if (z ==false && c > 0)
-	{
-		b = b + max_c * eta_c * T_u;
-		double res = c - max_c;
-		
+	if( c > 0){
+		b = b + max_c * eta_c * T_u;	
 	}
-	if (d > 0)
-	{
+	if(d > 0){
 		b = b - max_d * eta_d * T_u;
-		if (max_d < d)
-		{
+		if (max_d < d){
 			loss_events += 1;
 			load_deficit += (d - max_d);
 		}
@@ -172,45 +161,35 @@ std::pair<double, double> minstorage_static(double b, double ev_b, double c, dou
 {
 	double max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), charging_rate);
 
-	if ( z == true)
-	{
+	if ( z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
-		
 	}
-	else if (c > 0 ){
-		max_c = fmin(calc_max_charging(c, b), alpha_c);
+	if (c > 0 ){
 		b = b + max_c * eta_c * T_u;
 	}
-	if (d > 0)
-		{
-			if (z == true || is_home == false)
-			{
-				// cannot discharge ev
-				b = b - max_d * eta_d * T_u;
-				if (max_d < d)
-				{
-					loss_events += 1;
-					load_deficit += (d - max_d);
-				}
+	if (d > 0){
+		if (z == true || is_home == false){
+			// cannot discharge ev
+			b = b - max_d * eta_d * T_u;
+			if (max_d < d){
+				loss_events += 1;
+				load_deficit += (d - max_d);
 			}
-			else
-			{
-				ev_b = ev_b - max_d_ev * eta_d_ev * T_u;
-				double res = d - max_d_ev;
-				if (res > 0)
-				{
-					max_d = fmin(calc_max_discharging(res, b), alpha_d);
-					b = b - max_d * eta_d * T_u;
-					res = res - max_d;
-
-					if (res > 0)
-					{
-						loss_events += 1;
-						load_deficit += res;
-					}
+			}
+		else{
+			ev_b = ev_b - max_d_ev * eta_d_ev * T_u;
+			double res = d - max_d_ev;
+			if (res > 0){
+				max_d = fmin(calc_max_discharging(res, b), alpha_d);
+				b = b - max_d * eta_d * T_u;
+				res = res - max_d;
+				if (res > 0){
+					loss_events += 1;
+					load_deficit += res;
 				}
 			}
 		}
+	}
 
 	return std::make_pair(ev_b, b);
 }
@@ -220,28 +199,22 @@ std::pair<double, double>mostSustainable_static(double b, double ev_b, double c,
 	// charge: 1=stationary, 2= ev, 3 = verloren
 	//  discharge: 1= stationary, 2 = ev, 3= grid
 	double max_c_ev;
-	//epsilon = epsilon+1;
 	double max_d_ev;
 	if(z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 	}
-	if (c > 0)
-	{
+	if(c > 0){
 		b = b + max_c * eta_c * T_u;
-		
 	}
-	if (d > 0)
-	{
+	if(d > 0){
 		b = b - max_d * eta_d * T_u;
 		double res = d - max_d;
-		if (res > 0 && z == false && is_home == true)
-		{
-			max_d_ev = fmin(calc_max_discharging_ev(d, ev_b, min_soc, ev_battery_capacity), charging_rate);
+		if (res > 0 && z == false && is_home == true){
+			max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), charging_rate);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
 			res = res - max_d_ev;
 		}
-		if (res > 0)
-		{
+		if (res > 0){
 			loss_events += 1;
 			load_deficit += res;
 		}
@@ -254,14 +227,12 @@ std::pair<double, double>mostSustainable_static(double b, double ev_b, double c,
 std::pair<double, double> maximise_solar_charging(double b, double ev_b, double c2, double d2, bool z, double max_c2, double max_d2, double maxCharging, bool is_home)
 {
 	// charge EV whenever there is sun available after laod has been covered
-	double max_c_ev = calc_max_charging_ev(c2, ev_b);
 	double max_d_ev;
-	if (z == true)
-	{
+	if (z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 	}
-
-	if (c2 > 0 && is_home){
+	if (c2 > 0 && is_home == true){
+		double max_c_ev = calc_max_charging_ev(c2, ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
 		double res = c2 - max_c_ev;
 		if(res > 0){
@@ -276,7 +247,7 @@ std::pair<double, double> maximise_solar_charging(double b, double ev_b, double 
 		b = b - max_d2 * eta_d * T_u;
 		double res = d2 - max_d2;
 		if (res > 0 && z == false && is_home == true){
-			max_d_ev = fmin(calc_max_discharging_ev(d2, ev_b, min_soc, ev_battery_capacity), charging_rate);
+			max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), charging_rate);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
 			res = res - max_d_ev;
 		}
@@ -292,8 +263,7 @@ std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyS
 {
 		double ev_b = 0.0;
 
-		if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome && hour != 0)
-		{
+		if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome && hour != 0){
 			ev_b = dailyStatuses[hour].currentSOC;
 		} else {
 			ev_b = last_soc;
@@ -310,21 +280,18 @@ std::tuple<double, double, int> simulateEVCharging(std::vector<EVStatus> &dailyS
 		else if (EV_charging == "min_cost"){
 			chargeHour = mincost(dailyStatuses, ev_b, hour, t_ch, charged_last_hour);
 		}
-		else
-		{
+		else{
 			std::cout << "ERROR: Invalid EV charging policy selected" << std::endl;
 		}
 
 		double maxCharging = 0.0;
-				if (chargeHour == hour)
-			{
-				double available_power = charging_rate * T_u;
-				maxCharging = calc_max_charging_ev(available_power, ev_b);
-			}
-			if (maxCharging == 0.0)
-			{
-				chargeHour = -1;
-			}
+		if (chargeHour == hour){
+			double available_power = charging_rate * T_u;
+			maxCharging = calc_max_charging_ev(available_power, ev_b);
+		}
+		if (maxCharging == 0.0){
+			chargeHour = -1;
+		}
 
 		return std::make_tuple(maxCharging, ev_b, chargeHour);
 }
@@ -369,7 +336,6 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		index_t_solar = t % trace_length_solar;
 		index_t_load = t % trace_length_load;
 		EV_index = EV_index % 365;
-		cout << "EV_index: " << EV_index << endl;
 
 		load_sum += load_trace[index_t_load];
 
@@ -411,10 +377,10 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		//std::cout << "Before unidirectional - ev_b: " << ev_b << ", b: " << b << ", c: " << c << ", d: " << d << ", load_deficit: " << load_deficit << std::endl;
 		//std::cout << "Before mas solar - ev_b: " << ev_b << ", b: " << b << ", c2: " << c2 << ", d2: " << d2 << ", max_ c2: " << max_c2 << ", max_d2: " << max_d2 << ", load_deficit: " << load_deficit << std::endl;
 
-		double ev_b_before = ev_b;
 		std::pair<double, double> operationResult;
+		double ev_b_before = ev_b;
 
-			if (Operation_policy == "unidirectional"){
+		if (Operation_policy == "unidirectional"){
 			operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging);
 		}
 		else if (Operation_policy == "min_storage"){
@@ -424,7 +390,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			operationResult = mostSustainable_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home);
 		}
 		else if (Operation_policy == "maximise_solar_charging"){
-			operationResult = maximise_solar_charging(b, ev_b, c2, d2, z, max_c, max_d, maxCharging, is_home);
+			operationResult = maximise_solar_charging(b, ev_b, c2, d2, z, max_c2, max_d2, maxCharging, is_home);
 		}
 		else{
 			std::cout << "ERROR: Invalid operation policy selected" << std::endl;
