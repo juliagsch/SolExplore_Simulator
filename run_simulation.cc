@@ -68,7 +68,6 @@ SimulationResult run_simulations(vector<double> &load, vector<double> &solar, in
 
 int main(int argc, char ** argv) 
 {
-
 	int input_process_status = process_input(argv, true);
 
 	// Handle input processing error if needed
@@ -90,17 +89,19 @@ int main(int argc, char ** argv)
 	
 		// Initialize EVStatus
 		EVStatus evStatus;
-	printEVRecords(evRecords);
+	//printEVRecords(evRecords);
 
 	// Generate all daily statuses
 	std::vector<std::vector<EVStatus>> allDailyStatuses = generateAllDailyStatuses(evRecords);
 	//printAllEVStatuses(allDailyStatuses, evRecords);
 
-	
+	//write a cout command that prints out the evcharging polocy and operation policy
+	//cout << "EV charging policy: " << EV_charging << endl;
+	//cout << "EV operation policy: " << Operation_policy << endl;
 	SimulationResult sr = run_simulations(load, solar, metric, days_in_chunk, number_of_chunks, evRecords, allDailyStatuses, max_soc, min_soc);
 
 	double cost = sr.B / kWh_in_one_cell * B_inv + sr.C * PV_inv;
-	cout << "Battery: " << sr.B << "\tPV: " << sr.C << "\tCost: " << cost << endl;
+	cout  << sr.B << " " << sr.C  << " " << cost << endl;
 
 	return 0;
 }

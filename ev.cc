@@ -145,7 +145,7 @@ int convertTimeToHour(const std::string &timeStr)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Error converting time to hour: " << e.what() << std::endl;
+      //  std::cerr << "Error converting time to hour: " << e.what() << std::endl;
         return -1; // Return a default value or handle the error as appropriate
     }
 }
