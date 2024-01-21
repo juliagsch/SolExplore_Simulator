@@ -248,17 +248,12 @@ int process_input(char** argv, bool process_metric_input) {
     cout << "charging_rate_string = " << charging_rate_string << ", charging_rate = " << charging_rate << endl;
 #endif
 
-    std::set<std::string> validEVChargingOptions = {"naive", "last", "min_cost"};
-    std::set<std::string> validOperationPolicyOptions = {"unidirectional", "min_storage", "most_sustainable", "maximise_solar_charging"};
+    std::set<std::string> validOperationPolicyOptions = {"optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional", "hybrid_bidirectional"};
 
-    std::string evChargingInput = argv[++i];      
+       
     std::string operationPolicyInput = argv[++i]; 
 
-    if (validEVChargingOptions.find(evChargingInput) == validEVChargingOptions.end())
-    {
-        std::cerr << "Invalid EV charging policy: " << evChargingInput << std::endl;
-        exit(EXIT_FAILURE); 
-    }
+    
 
     if (validOperationPolicyOptions.find(operationPolicyInput) == validOperationPolicyOptions.end())
     {
@@ -266,7 +261,6 @@ int process_input(char** argv, bool process_metric_input) {
         exit(EXIT_FAILURE); 
     }
 
-    EV_charging = evChargingInput;
     Operation_policy = operationPolicyInput;
 
     string path_to_ev_data_string = argv[++i];
