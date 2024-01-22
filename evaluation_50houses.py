@@ -3,15 +3,28 @@ import subprocess
 import pandas as pd
 
 # Define the load and PV file names
-load_files = ["load_114.txt","load_171.txt", "load_252.txt","load_370.txt","load_545.txt","load_744.txt", "load_890.txt", "load_1103.txt", "load_1169.txt", "load_1192.txt", "load_1792.txt", "load_2018.txt", "load_2072.txt", "load_2199.txt", "load_2337.txt", "load_2638.txt","load_2814.txt","load_2980.txt", "load_2986.txt", "load_3134.txt","load_3367.txt", "load_3482.txt", "load_3527.txt","load_4357.txt","load_4526.txt","load_5129.txt","load_5439.txt","load_5545.txt","load_5615.txt","load_5738.txt","load_5796.txt","load_5874.txt","load_5892.txt","load_6121.txt","load_6266.txt", "load_6423.txt","load_6578.txt", "load_7429.txt", "load_7741.txt","load_7788.txt","load_7850.txt","load_7940.txt","load_7989.txt","load_7989.txt","load_8084.txt","load_8197.txt","load_8236.txt","load_8317.txt", "load_8419.txt", "load_8626.txt","load_9121.txt","load_9647.txt",]
-pv_files = [f.replace('load', 'PV') for f in load_files]  # Corresponding PV file names
+# mayvve delete 5439
+load_files2 = ["load_114.txt","load_171.txt", "load_252.txt","load_370.txt","load_545.txt","load_744.txt", "load_890.txt", "load_1103.txt", "load_1169.txt", "load_1192.txt", "load_1792.txt", "load_2018.txt", "load_2072.txt", "load_2199.txt", "load_2337.txt", "load_2638.txt","load_2814.txt","load_2980.txt", "load_2986.txt", "load_3134.txt","load_3367.txt", "load_3482.txt", "load_3527.txt","load_4357.txt","load_4526.txt","load_5129.txt","load_5439.txt","load_5545.txt","load_5615.txt","load_5738.txt","load_5796.txt","load_5874.txt","load_5892.txt","load_6121.txt","load_6266.txt", "load_6423.txt","load_6578.txt", "load_7429.txt", "load_7741.txt","load_7788.txt","load_7850.txt","load_7940.txt","load_7989.txt","load_7989.txt","load_8084.txt","load_8197.txt","load_8236.txt","load_8317.txt", "load_8419.txt", "load_8626.txt","load_9121.txt","load_9647.txt",]
+load_files = ["load_114.txt","load_171.txt", "load_252.txt","load_370.txt","load_545.txt","load_744.txt", "load_890.txt", "load_1103.txt", "load_1169.txt", "load_1192.txt"]
+
+# Base path for the files
+base_path = "pecan/"
+
+# Update load_files and pv_files to include the full path
+load_files = [base_path +  file for file in load_files]
+pv_files = [file.replace('load', 'PV') for file in load_files]
 
 # Define other parameters
 wfh_types = ['1', '2', '3']
 operation_policies = ["optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional"]
-
+ev_data_files = {
+    '1': 'ev_T1.csv',
+    '2': 'ev_T23.csv',
+    '3': 'ev_T3.csv'
+}
+# 2690 460 50 200 1 0.5 0.95 100
 # Define the command template
-command_template = "./bin/sim 2690 460 10 20 1 0.1 0.95 100 pecan/normed/{load_file} pecan/normed{pv_file} 0.8 0.2 40.0 4 7.4  {op}"
+command_template = "./bin/sim 1250 460 50 200 1 0.5 0.85 100 {load_file} {pv_file} 0.8 0.2 40.0 4 7.4  {op} ev_data/{file_name}"
 
 # Initialize a DataFrame to store results
 results_df = pd.DataFrame(columns=["WFH Type", "Operation Policy", "Battery", "PV", "Cost"])
@@ -21,7 +34,8 @@ for load_file, pv_file in zip(load_files, pv_files):
     for wfh_type in wfh_types:
             for op in operation_policies:
                 # Construct and execute the command
-                command = command_template.format(load_file=load_file, pv_file=pv_file,  op=op)
+                ev_file_name = ev_data_files[wfh_type]
+                command = command_template.format(load_file=load_file, pv_file=pv_file,  op=op, file_name=ev_file_name)
                 print("Executing command: " + command)
 
                 result = subprocess.run(command.split(), stdout=subprocess.PIPE, text=True)
