@@ -24,7 +24,7 @@ ev_data_files = {
 }
 # 2690 460 50 200 1 0.5 0.95 100
 # Define the command template
-command_template = "./bin/sim 1250 460 50 200 1 0.5 0.85 100 {load_file} {pv_file} 0.8 0.2 40.0 4 7.4  {op} ev_data/{file_name}"
+command_template = "./bin/sim 1250 460 70 250 1 0.2 0.85 100 {load_file} {pv_file} 0.8 0.2 40.0 7.4  {op} ev_data/{file_name}"
 
 # Initialize a DataFrame to store results
 results_df = pd.DataFrame(columns=["WFH Type", "Operation Policy", "Battery", "PV", "Cost"])
@@ -61,4 +61,4 @@ for load_file, pv_file in zip(load_files, pv_files):
 avg_results_df = results_df.groupby(["WFH Type", "Operation Policy"]).mean().reset_index()
 
 # Save the averaged results to a CSV file
-avg_results_df.to_csv("averaged_evaluation_results.csv", index=False)
+avg_results_df.to_csv("averaged_evaluation_results_10_0.7.csv", index=False)

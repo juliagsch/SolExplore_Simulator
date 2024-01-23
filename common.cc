@@ -39,6 +39,8 @@ int days_in_chunk;
 vector<double> load;
 vector<double> solar;
 
+vector<double> socValues;
+
 vector<double> read_data_from_file(istream &datafile, int limit = INT_MAX) {
 
     vector <double> data;
@@ -235,12 +237,7 @@ int process_input(char** argv, bool process_metric_input) {
 #ifdef DEBUG
     cout << "ev_battery_capacity_string = " << ev_battery_capacity_string << ", ev_battery_capacity = " << ev_battery_capacity << endl;
 #endif
-    string t_ch_string = argv[++i];
-    t_ch = stod(t_ch_string);
-
-#ifdef DEBUG
-    cout << "t_ch_string = " << t_ch_string << ", t_ch = " << t_ch << endl;
-#endif
+  
     string charging_rate_string = argv[++i];
     charging_rate = stod(charging_rate_string);
 

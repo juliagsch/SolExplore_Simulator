@@ -31,7 +31,6 @@ extern double pv_step; // search in steps of x kW
 extern double min_soc;
 extern double max_soc;
 extern double ev_battery_capacity;
-extern int t_ch;
 extern double charging_rate;
 extern std::string path_to_ev_data;
 
@@ -47,7 +46,7 @@ double static kWh_in_one_cell = 0.011284;
 double static num_cells_steps = 400; // search in total of n steps for cells
 double static num_pv_steps = 350; // search in total of n steps for pv
 
-
+extern std::vector<double> socValues;
 
 struct SimulationResult {
 

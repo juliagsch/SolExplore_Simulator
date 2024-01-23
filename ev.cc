@@ -326,3 +326,37 @@ void printAllEVStatuses(const std::vector<std::vector<EVStatus>> &allDailyStatus
         }
     }
 }
+void printAllEVStatusesToCSV(const std::vector<std::vector<EVStatus>> &allDailyStatuses, const std::vector<EVRecord> &evRecords, const std::string &filename)
+{
+    std::ofstream outFile(filename); // Open the file for writing
+
+    // Check if file is successfully opened
+    if (!outFile.is_open())
+    {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+
+    // Write CSV headers
+    outFile << "Day,Day Name,Hour,Status,Next Departure Time,Current SOC\n";
+
+    for (const auto &dailyStatuses : allDailyStatuses)
+    {
+        if (!dailyStatuses.empty())
+        {
+            std::string dayNumber = std::to_string(dailyStatuses[0].dayNumber);
+            std::string dayName = dailyStatuses[0].dayName;
+
+            for (const auto &status : dailyStatuses)
+            {
+                outFile << dayNumber << "," << dayName << ",";
+                outFile << std::setw(2) << status.hour << ",";
+                outFile << (status.isAtHome ? "At Home" : "Away") << ",";
+                outFile << status.nextDepartureTime << ",";
+                outFile << std::fixed << std::setprecision(2) << status.currentSOC << "\n";
+            }
+        }
+    }
+
+    outFile.close(); // Close the file
+}

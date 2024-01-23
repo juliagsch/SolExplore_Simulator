@@ -94,6 +94,7 @@ int main(int argc, char ** argv)
 	// Generate all daily statuses
 	std::vector<std::vector<EVStatus>> allDailyStatuses = generateAllDailyStatuses(evRecords);
 	//printAllEVStatuses(allDailyStatuses, evRecords);
+	//printAllEVStatusesToCSV(allDailyStatuses, evRecords, "output.csv"); // Replace "output.csv" with your desired file name
 
 	//write a cout command that prints out the evcharging polocy and operation policy
 	//cout << "EV charging policy: " << EV_charging << endl;
@@ -102,6 +103,22 @@ int main(int argc, char ** argv)
 
 	double cost = sr.B / kWh_in_one_cell * B_inv + sr.C * PV_inv;
 	cout  << sr.B << " " << sr.C  << " " << cost << endl;
+	
+		// Open an output file stream
+		std::ofstream outFile("soc_values.txt");
+		if (!outFile){
+			std::cerr << "Error: Unable to open file for writing." << std::endl;
+			return 1;
+		}
+
+		// Write SOC values to the file
+		for (const auto &value : socValues){
+			outFile << value << std::endl;
+		}
+
+		// Close the file stream
+		outFile.close();
+		
 
 	return 0;
 }

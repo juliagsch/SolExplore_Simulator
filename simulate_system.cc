@@ -484,10 +484,12 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		else{
 			std::cout << "ERROR: Invalid operation policy selected" << std::endl;
 		}
-		
+		//cout << "ev_b before update: " << ev_b << "b before update" << b << endl;
 
 		ev_b = operationResult.first;
 		b = operationResult.second;
+		//cout << "ev_b after update: " << ev_b << "b after update" << b << endl;
+		//cout << "load_deficit: " << load_deficit << "load_sum" << load_sum << endl;
 		// Update current SOC in EVStatus and carry over to next hour
 		allDailyStatuses[day][hour].currentSOC = ev_b;
 		last_soc = ev_b;
@@ -496,7 +498,18 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		} else {
 			charged_last_hour = false;
 		}
-		EV_index = EV_index +1;
+		
+		//cout << "OK" << endl;
+		//cout << "hour: " << hour << "day" << day << endl;
+		//cout << "ev status: " << allDailyStatuses[EV_index][hour].isAtHome << endl;
+		//cout << "next departure" << convertTimeToHour(allDailyStatuses[EV_index][hour].nextDepartureTime) << endl;
+		if (convertTimeToHour(allDailyStatuses[EV_index][hour].nextDepartureTime) == hour + 1)
+		{
+			//cout << "about to push soc value: " << last_soc << endl;
+			socValues.push_back(last_soc);
+			//cout << "push was successful " << endl;
+				}
+		EV_index = EV_index + 1;
 	}
 
 	if (metric == 0) {

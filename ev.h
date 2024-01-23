@@ -43,5 +43,6 @@ int findNumberOfDays(const std::vector<EVRecord> &evRecords);
 std::vector<std::vector<EVStatus>> generateAllDailyStatuses(const std::vector<EVRecord> &evRecords);
 int convertTimeToHour(const std::string &timeStr);
 void printAllEVStatuses(const std::vector<std::vector<EVStatus>> &allDailyStatuses, const std::vector<EVRecord> &evRecords);
+void printAllEVStatusesToCSV(const std::vector<std::vector<EVStatus>> &allDailyStatuses, const std::vector<EVRecord> &evRecords, const std::string &filename);
 
 #endif // EV_H

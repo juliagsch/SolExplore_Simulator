@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Load the data from the CSV file
-file_path = 'averaged_evaluation_results_10.csv'  # Replace with your CSV file path
+file_path = 'averaged_evaluation_results_10_0.1.csv'  # Replace with your CSV file path
 data = pd.read_csv(file_path)
 
 # Filter only unidirectional policies
@@ -11,7 +11,7 @@ data = pd.read_csv(file_path)
 
 # Create a seaborn multilevel bar chart
 plt.figure(figsize=(12, 8))
-bar_plot = sns.barplot(x='Operation Policy', y='Cost', hue='WFH Type', data=data)
+bar_plot = sns.barplot(x='Operation Policy', y='Cost', hue='WFH Type', data=data, palette="rocket")
 sns.color_palette("flare", as_cmap=True)
 
 # Additional customization
