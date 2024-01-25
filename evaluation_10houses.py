@@ -18,13 +18,13 @@ pv_files = [file.replace('load', 'PV') for file in load_files]
 wfh_types = ['1', '2', '3']
 operation_policies = ["optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional"]
 ev_data_files = {
-    '1': 'ev_T1.csv',
-    '2': 'ev_T23.csv',
-    '3': 'ev_T3.csv'
+    '1': 'ev_merged_T1.csv',
+    '2': 'ev_merged_T23.csv',
+    '3': 'ev_merged_T3.csv'
 }
 # 2690 460 50 200 1 0.5 0.95 100
 # Define the command template
-command_template = "./bin/sim 1250 460 70 250 1 0.2 0.85 100 {load_file} {pv_file} 0.8 0.2 40.0 7.4  {op} ev_data/{file_name}"
+command_template = "./bin/sim 1250 460 10 20 1 0.5 0.95 100 {load_file} {pv_file} 0.8 0.2 40.0 7.4  {op} ev_data/{file_name}"
 
 # Initialize a DataFrame to store results
 results_df = pd.DataFrame(columns=["WFH Type", "Operation Policy", "Battery", "PV", "Cost"])

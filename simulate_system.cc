@@ -34,6 +34,7 @@ double calc_max_charging(double power, double b_prev) {
 
 	for (double c = power; c >= 0; c -= step) {
 		double upper_lim = a2_slope*(c/nominal_voltage_c) + a2_intercept;
+		//cout << "upper_lim: " << upper_lim << "c: " << c << endl;
 		double b = b_prev + c*eta_c*T_u;
 		if (b <= upper_lim) {
 			return c;
@@ -339,7 +340,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 
 	update_parameters(cells);
 
-	double b = b_0*cells*kWh_in_one_cell; 
+	double b_max = b_0*cells*kWh_in_one_cell; 
+	// start each simulation with a fully charged battery
+	double b = b_max;
 	loss_events = 0;
 	load_deficit = 0;
 	load_sum = 0;
@@ -391,6 +394,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		double ev_b = get_ev_b(allDailyStatuses[EV_index], hour, last_soc);
 		double ev_b_before = ev_b;
 		double maxCharging;
+		//cout << "BEFORE day: " << day << "hour: " << hour << "ev_b: " << ev_b << "b: " << b << "isHome: " << is_home << endl;
+		//cout << "BEFORE c2 without ev load: " << c2 << "d2: " << d2 << "max_c2: " << max_c2 << "max_d2: " << max_d2 << endl;
+		//cout << "operation policy" << Operation_policy << "load_deficit: " << load_deficit << "load_sum" << load_sum <<	endl;
 	
 		if (Operation_policy == "optimal_unidirectional"){
 			// only charge EV with excess solar energy, but not guaranteed that EV will be fully charged
@@ -535,6 +541,7 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 
 		mid_cells = (cells_L + cells_U) / 2.0;
 		//simulate with PV max first 
+		//cout << "mid_cells: " << mid_cells << endl;
 		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 
 		//cout << "sim result with " << a2_intercept << " kWh and " << pv_max << " pv: " << loss << endl;
@@ -573,6 +580,8 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 				//works
 				lowest_feasible_pv -= pv_step;
 			} else {
+			//	cout << "b: " << cells * kWh_in_one_cell << "pv: " << lowest_feasible_pv << endl;
+
 				break;
 			}
 
@@ -596,5 +605,34 @@ vector <SimulationResult> simulate(vector <double> &load_trace, vector <double> 
 
 	} 
 
+	return curve;
+}
+
+vector<SimulationResult> simulate2(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
+{
+
+	// first, find the lowest value of cells that will get us epsilon loss when the PV is maximized
+	// use binary search
+	double cells_U = cells_max;
+	double cells_L = cells_min;
+	double mid_cells = 0.0;
+	double loss = 0.0;
+
+
+	// set the starting number of battery cells to be the upper limit that was converged on
+	double starting_cells = cells_U;
+	double starting_cost = B_inv * starting_cells + PV_inv * pv_max;
+	double lowest_feasible_pv = pv_max;
+
+	double lowest_cost = starting_cost;
+	double lowest_B = starting_cells * kWh_in_one_cell;
+	double lowest_C = pv_max;
+	vector<SimulationResult> curve;
+
+	loss = sim(load_trace, solar_trace, start_index, end_index, 12.45 / kWh_in_one_cell, 7.17, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+
+	curve.push_back(SimulationResult(12.45, 7.17, 7000));
+
+		
 	return curve;
 }

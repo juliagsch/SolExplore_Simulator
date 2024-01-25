@@ -36,7 +36,16 @@ SimulationResult run_simulations(vector<double> &load, vector<double> &solar, in
 	// compute all sizing curves
 	for (int chunk_num = 0; chunk_num < number_of_chunks; chunk_num += 1) {
 
-		int chunk_start = rand() % max(solar.size()%24,load.size()%24);
+		//int chunk_start = rand() % max(solar.size()%24,load.size()%24);
+		int max_size = std::min(solar.size(), load.size());
+		int max_chunks = max_size / 24; // Number of complete 24-hour chunks
+
+		// Generate a random chunk index
+		int chunk_index = rand() % max_chunks;
+
+		// Calculate chunk_start
+		int chunk_start = chunk_index * 24;
+		//TODO: modify this if we know the first day of the chunk is for e.g. a monday, then ev_Start should also be a monday
 		int Ev_start = rand() % evRecords.size();
 		int chunk_end = chunk_start + t_chunk_size;
 
