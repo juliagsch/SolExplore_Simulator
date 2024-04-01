@@ -529,7 +529,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			// wir gucken jedes mal ob man ev chargen kann, und wenn ja, chargen wir.
 			//nicht kurz vor departure dischargen
 			// hier computen ob man ev chargen kann
-			cout << "EV DAY: " << allDailyStatuses[ev_day][hour].dayNumber << "hour: " << hour << "nextDept: " << convertTimeToHour(allDailyStatuses[ev_day][hour].nextDepartureTime) << endl;
+			//cout << "EV DAY: " << allDailyStatuses[ev_day][hour].dayNumber << "hour: " << hour << "nextDept: " << convertTimeToHour(allDailyStatuses[ev_day][hour].nextDepartureTime) << endl;
 
 			bool dont_discharge = false;
 			if (convertTimeToHour(allDailyStatuses[ev_day][hour].nextDepartureTime) == hour + 1){
@@ -541,7 +541,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			} else{
 				maxCharging = 0.0;
 			}
-			cout << "maxCharging: " << maxCharging << "ev_b: " << ev_b <<endl;
+			//cout << "maxCharging: " << maxCharging << "ev_b: " << ev_b <<endl;
 
 			if (maxCharging > 0){
 				z = true;
@@ -552,10 +552,10 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
 			max_c = fmin(calc_max_charging(c, b), alpha_c);
 			max_d = fmin(calc_max_discharging(d, b), alpha_d);
-			cout << "BEFORE c: " << c << "d: " << d << "max_c: " << max_c << "max_d: " << max_d << "ev_b: " << ev_b << "b : " << b << endl;
+			//cout << "BEFORE c: " << c << "d: " << d << "max_c: " << max_c << "max_d: " << max_d << "ev_b: " << ev_b << "b : " << b << endl;
 
 			operationResult = maximise_solar_charging_safe(b, ev_b, c, d, max_c, max_d, is_home, dont_discharge, z, maxCharging, hour);
-			cout << "AFTER ev_b: " << operationResult.first << "b: " << operationResult.second << endl;
+			//cout << "AFTER ev_b: " << operationResult.first << "b: " << operationResult.second << endl;
 		}
 		
 		else if (Operation_policy == "hybrid_bidirectional"){
