@@ -16,12 +16,12 @@ file_paths = {
 
 # Abbreviated policy names for x-axis labels
 policy_labels = {
-    "safe_bidirectional": "Safe Bid.",
-    "safe_unidirectional": "Safe Unid.",
-    "hybrid_bidirectional": "Hybrid Bid.",
-    "hybrid_unidirectional": "Hybrid Unid.",
-     "optimal_bidirectional": "Optimal Bid.",
-    "optimal_unidirectional": "Optimal Unid."
+    "safe_bidirectional": "N-B",
+    "safe_unidirectional": "N-U.",
+    "hybrid_bidirectional": "SG-B",
+    "hybrid_unidirectional": "SG-U",
+     "optimal_bidirectional": "SO-B",
+    "optimal_unidirectional": "SO-U"
    
 }
 
@@ -49,6 +49,6 @@ for i, v in enumerate(average_soc_values):
 plt.ylim(0, 40)
 
 # Show the plot
-plt.xticks(rotation=0, fontsize=14)  # Ensure horizontal x-axis labels
+plt.xticks(rotation=0, fontsize=16)  # Ensure horizontal x-axis labels
 plt.tight_layout()
 plt.show()

@@ -19,8 +19,11 @@ double cells_step; // search in step of x cells
 double pv_min;
 double pv_max;
 double pv_step; // search in steps of x kW
+double battery_result;
+double pv_result;
+int loadNumber;
 
-double max_soc;
+    double max_soc;
 double min_soc;
 
 double ev_battery_capacity = 40.0;
@@ -38,8 +41,65 @@ int days_in_chunk;
 
 vector<double> load;
 vector<double> solar;
+std::string wfh_type;
 
 vector<double> socValues;
+vector<ChargingEvent> chargingEvents;
+
+#include <iostream>
+#include <string>
+#include <cstdlib> // For std::stoi
+
+#include <iostream>
+#include <regex>
+#include <string>
+
+std::string extract_wfh_type(const std::string &ev_filename)
+{
+    std::regex pattern("ev_data/ev_merged_T(\\d+)\\.csv");
+    std::smatch match;
+
+    if (std::regex_search(ev_filename, match, pattern) && match.size() > 1)
+    {
+        return match.str(1); // The captured group
+    }
+    else
+    {
+        return ""; // No match found
+    }
+}
+
+
+
+int extractLoadNumber(const std::string &filename)
+{
+    // Find the position of "load_"
+    size_t loadPos = filename.find("load_");
+    if (loadPos == std::string::npos)
+    {
+        std::cerr << "Error: 'load_' not found in filename." << std::endl;
+        return -1; // Error indicator
+    }
+
+    // Extract the substring starting from "load_" to the end of the filename
+    std::string numberStr = filename.substr(loadPos + 5); // 5 is the length of "load_"
+
+    // Remove ".txt" from the end of the number string
+    size_t txtPos = numberStr.find(".txt");
+    if (txtPos != std::string::npos)
+    {
+        numberStr = numberStr.substr(0, txtPos);
+    }
+
+    // Convert the number string to an integer
+    int loadNumber = std::stoi(numberStr);
+
+    return loadNumber;
+}
+
+
+
+
 
 vector<double> read_data_from_file(istream &datafile, int limit = INT_MAX) {
 
@@ -173,6 +233,7 @@ int process_input(char** argv, bool process_metric_input) {
         ifstream loadstream(loadfile.c_str());
         load = read_data_from_file(loadstream);
     }
+     loadNumber = extractLoadNumber(loadfile);
 
 #ifdef DEBUG
 	cout << "checking for errors in load file..." << endl;
@@ -262,7 +323,15 @@ int process_input(char** argv, bool process_metric_input) {
 
     string path_to_ev_data_string = argv[++i];
     path_to_ev_data = path_to_ev_data_string;
-   
+    cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
+    wfh_type = extract_wfh_type(path_to_ev_data);
+    cout << "wfh_type = " << wfh_type << endl;
+
+    std::string battery_result_string = argv[++i];
+    battery_result = stod(battery_result_string);
+
+    string pv_result_string = argv[++i];
+    pv_result = stod(pv_result_string);
 
 #ifdef DEBUG
     cout << " path_to_ev_data = " << path_to_ev_data << endl;

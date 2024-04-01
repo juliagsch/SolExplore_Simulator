@@ -17,6 +17,8 @@ extern int days_in_chunk;
 
 extern vector<double> load;
 extern vector<double> solar;
+extern double battery_result;
+extern double pv_result;
 
 // define the upper and lower values to test for battery cells and pv,
 // as well as the step size of the search
@@ -33,6 +35,8 @@ extern double max_soc;
 extern double ev_battery_capacity;
 extern double charging_rate;
 extern std::string path_to_ev_data;
+extern int loadNumber;
+extern std::string wfh_type;
 
 // common.h
 extern std::string Operation_policy;
@@ -47,6 +51,15 @@ double static num_cells_steps = 400; // search in total of n steps for cells
 double static num_pv_steps = 350; // search in total of n steps for pv
 
 extern std::vector<double> socValues;
+
+
+struct ChargingEvent
+{
+	int hour;
+	double chargingAmount;
+};
+
+extern std::vector<ChargingEvent> chargingEvents;
 
 struct SimulationResult {
 

@@ -21,7 +21,7 @@ using namespace std;
 // metric: 0 for LOLP, 1 for unmet load
 // epsilon: number in range [0,1] representing LOLP or unmet load fraction.
 // chunk_size: length of time (in days)
-SimulationResult run_simulations(vector<double> &load, vector<double> &solar, int metric, int chunk_size, int number_of_chunks, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc) {
+void run_simulations(vector<double> &load, vector<double> &solar, int metric, int chunk_size, int number_of_chunks, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc) {
 
 	// set random seed to a specific value if you want consistency in results
 	srand(10);
@@ -49,9 +49,10 @@ SimulationResult run_simulations(vector<double> &load, vector<double> &solar, in
 		int Ev_start = rand() % evRecords.size();
 		int chunk_end = chunk_start + t_chunk_size;
 
-		vector<SimulationResult> sr = simulate(load, solar, chunk_start, chunk_end, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+		sim(load, solar, chunk_start, chunk_end, battery_result , pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+		
 		//saves the sizing curve for this sample 
-		results.push_back(sr);
+
 
 	}
 
@@ -71,7 +72,7 @@ SimulationResult run_simulations(vector<double> &load, vector<double> &solar, in
 
 	// calculate the chebyshev curves, find the cheapest system along their upper envelope, and return it
 	// returns the optimal result 
-	return calculate_sample_bound(results, epsilon, confidence);
+
 
 }
 
@@ -108,26 +109,53 @@ int main(int argc, char ** argv)
 	//write a cout command that prints out the evcharging polocy and operation policy
 	//cout << "EV charging policy: " << EV_charging << endl;
 	//cout << "EV operation policy: " << Operation_policy << endl;
-	SimulationResult sr = run_simulations(load, solar, metric, days_in_chunk, number_of_chunks, evRecords, allDailyStatuses, max_soc, min_soc);
 
-	double cost = sr.B / kWh_in_one_cell * B_inv + sr.C * PV_inv;
-	cout  << sr.B << " " << sr.C  << " " << cost << endl;
-	
-		// Open an output file stream
-		std::ofstream outFile("soc_values.txt");
-		if (!outFile){
-			std::cerr << "Error: Unable to open file for writing." << std::endl;
-			return 1;
-		}
+	run_simulations(load, solar, metric, days_in_chunk, number_of_chunks, evRecords, allDailyStatuses, max_soc, min_soc);
+							 // Replace with actual load number, possibly parsed from input
 
-		// Write SOC values to the file
-		for (const auto &value : socValues){
-			outFile << value << std::endl;
-		}
+	// Construct the output filename
+	std::stringstream filename;
+	cout << "wfh_type = " << wfh_type << endl;
+	filename << "soc/soc_" << Operation_policy << "_" << loadNumber << "_" << wfh_type << ".txt";
 
-		// Close the file stream
-		outFile.close();
-		
+	// Open an output file stream with the constructed filename
+	std::ofstream outFile(filename.str());
+	if (!outFile)
+	{
+		std::cerr << "Error: Unable to open file for writing." << std::endl;
+		return 1;
+	}
+
+	// Write SOC values to the file
+	for (const auto &value : socValues)
+	{
+		outFile << value << std::endl;
+	}
+
+	// Close the file stream
+	outFile.close();
+
+	std::stringstream filename2;
+	filename2 << "charging/c_" << Operation_policy << "_" << loadNumber << "_" << wfh_type << ".txt";
+
+	// Open an output file stream with the constructed filename
+	std::ofstream outFile2(filename2.str());
+	if (!outFile)
+	{
+		std::cerr << "Error: Unable to open file for writing." << std::endl;
+		return 1;
+	}
+
+	// Write charging data to the file
+	for (const auto &event : chargingEvents)
+	{
+		outFile2 << event.hour << "\t" << event.chargingAmount << std::endl;
+	}
+
+	// Close the file stream
+	outFile2.close();
 
 	return 0;
+
+
 }
