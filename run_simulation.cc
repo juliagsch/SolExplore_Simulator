@@ -34,55 +34,35 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 
 	// get random start times and run simulation on this chunk of data
 	// compute all sizing curves
-	for (int chunk_num = 0; chunk_num < number_of_chunks; chunk_num += 1) {
+	//for (int chunk_num = 0; chunk_num < number_of_chunks; chunk_num += 1) {
 
 		//int chunk_start = rand() % max(solar.size()%24,load.size()%24);
-		int max_size = std::min(solar.size(), load.size());
-		int max_chunks = max_size / 24; // Number of complete 24-hour chunks
+		//int max_size = std::min(solar.size(), load.size());
+		//int max_chunks = max_size / 24; // Number of complete 24-hour chunks
 
 		// Generate a random chunk index
-		int chunk_index = rand() % max_chunks;
+		//int chunk_index = rand() % max_chunks;
 
 		// Calculate chunk_start
-		int chunk_start = chunk_index * 24;
+		//int chunk_start = chunk_index * 24;
 		//TODO: modify this if we know the first day of the chunk is for e.g. a monday, then ev_Start should also be a monday
 		int Ev_start = rand() % evRecords.size();
-		int chunk_end = chunk_start + t_chunk_size;
+		//int chunk_end = chunk_start + t_chunk_size;
 
-		sim(load, solar, chunk_start, chunk_end, battery_result , pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
-		
+		sim(load, solar, 0, t_chunk_size, battery_result, pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+
 		//saves the sizing curve for this sample 
 
 
 	}
 
 
-#ifdef DEBUG
-	// print all of the curves
-	int chunk_index = 1;
-	cout << "DEBUG: sizing_curves" << endl;
-	for (vector<vector<SimulationResult>>::iterator it = results.begin(); it != results.end(); ++it, ++chunk_index) {
-		cout << "chunk_" << chunk_index << endl;
-		for (vector<SimulationResult>::iterator it2 = it->begin() ; it2 != it->end(); ++it2) {
-			cout << it2->B << "\t" << it2->C << "\t" << it2->cost << endl;
-		}
-	}
-	cout << "DEBUG: sizing_curves_end" << endl;
-#endif
 
-	// calculate the chebyshev curves, find the cheapest system along their upper envelope, and return it
-	// returns the optimal result 
-
-
-}
-
-int main(int argc, char ** argv) 
-{
+int main(int argc, char ** argv) {
 	int input_process_status = process_input(argv, true);
 
 	// Handle input processing error if needed
-	if (input_process_status != 0)
-	{
+	if (input_process_status != 0){
 		std::cerr << "Error processing input" << std::endl;
 		return 1; // Or handle the error as appropriate
 	}
@@ -91,8 +71,7 @@ int main(int argc, char ** argv)
 	std::vector<EVRecord> evRecords = readEVData(path_to_ev_data);
 
 	// Check if EV data was read successfully
-	if (evRecords.empty())
-	{
+	if (evRecords.empty()){
 		std::cerr << "Error reading EV data or no records found" << std::endl;
 		return 1; // Or handle the error as appropriate
 	}
@@ -114,8 +93,9 @@ int main(int argc, char ** argv)
 							 // Replace with actual load number, possibly parsed from input
 
 	// Construct the output filename
+	/*
 	std::stringstream filename;
-	cout << "wfh_type = " << wfh_type << endl;
+	//cout << "wfh_type = " << wfh_type << endl;
 	filename << "soc/soc_" << Operation_policy << "_" << loadNumber << "_" << wfh_type << ".txt";
 
 	// Open an output file stream with the constructed filename
@@ -154,7 +134,12 @@ int main(int argc, char ** argv)
 
 	// Close the file stream
 	outFile2.close();
+	*/
 
+	// TODO: Add output file for kwH values
+	// output  ev_charged, ev_discharged, stat_charged, stat_discharged
+	cout << ev_charged << "\t" << ev_discharged << "\t" << stat_charged << "\t" << stat_discharged << endl;
+// evval10_interum_use.py will store all outputs in a csv file
 	return 0;
 
 

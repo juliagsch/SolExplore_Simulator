@@ -29,6 +29,11 @@ double min_soc;
 double ev_battery_capacity = 40.0;
 int t_ch = 3;
 double charging_rate = 7.4;
+
+int ev_charged = 0;
+int ev_discharged = 0;
+int stat_charged = 0;
+int stat_discharged = 0;
 // common.cc
 std::string EV_charging = "naive";               // Default policy
 std::string Operation_policy = "unidirectional"; // Default policy
@@ -323,9 +328,9 @@ int process_input(char** argv, bool process_metric_input) {
 
     string path_to_ev_data_string = argv[++i];
     path_to_ev_data = path_to_ev_data_string;
-    cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
+   // cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
     wfh_type = extract_wfh_type(path_to_ev_data);
-    cout << "wfh_type = " << wfh_type << endl;
+    //cout << "wfh_type = " << wfh_type << endl;
 
     std::string battery_result_string = argv[++i];
     battery_result = stod(battery_result_string);

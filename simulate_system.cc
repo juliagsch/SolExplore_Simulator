@@ -145,6 +145,7 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 {
 	if(z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
+		ev_charged += maxCharging;
 		ChargingEvent event;
 		event.hour = hour;
 		event.chargingAmount = maxCharging;
@@ -152,9 +153,11 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 	}
 	if( c > 0){
 		b = b + max_c * eta_c * T_u;	
+		stat_charged += max_c;
 	}
 	if(d > 0){
 		b = b - max_d * eta_d * T_u;
+		stat_discharged += max_d;
 		if (max_d < d){
 			loss_events += 1;
 			load_deficit += (d - max_d);
@@ -170,6 +173,7 @@ std::pair<double, double> unidirectional_dynamic(double b, double ev_b, double d
 	if (c2 > 0 && is_home == true){
 		double max_c_ev = calc_max_charging_ev(c2, ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+		ev_charged += max_c_ev;
 		if (max_c_ev > 0 ){
 			ChargingEvent event;
 			event.hour = hour;
@@ -180,14 +184,17 @@ std::pair<double, double> unidirectional_dynamic(double b, double ev_b, double d
 		if(res > 0){
 			max_c2 = fmin(calc_max_charging(res, b), alpha_c);
 			b = b + max_c2 * eta_c * T_u;
+			stat_charged += max_c2;
 		}
 	}
 	else if (c2 > 0 && is_home == false )
 	{
 		b = b + max_c2 * eta_c * T_u;
+		stat_charged += max_c2;
 	}
 	if (d2 > 0){
 		b = b - max_d2 * eta_d * T_u;
+		stat_discharged += max_d2;
 		if (max_d2 < d2){
 			loss_events += 1;
 			load_deficit += (d2 - max_d2);
@@ -204,10 +211,12 @@ std::pair<double, double> unidirectional_hybrid(double b, double ev_b, double c,
 		event.hour = hour;
 		event.chargingAmount = maxCharging;
 		chargingEvents.push_back(event);
+		ev_charged += maxCharging;
 	}
 	if (c > 0 && is_home == true && z == false){
 		double max_c_ev = calc_max_charging_ev(c, ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+		ev_charged += max_c_ev;
 		if (max_c_ev > 0){
 			ChargingEvent event;
 			event.hour = hour;
@@ -218,13 +227,16 @@ std::pair<double, double> unidirectional_hybrid(double b, double ev_b, double c,
 		if (res > 0){
 			max_c = fmin(calc_max_charging(res, b), alpha_c);
 			b = b + max_c * eta_c * T_u;
+			stat_charged += max_c;
 		}
 	}
 	else if (c > 0 && is_home == false || c > 0 && z == true){
 		b = b + max_c * eta_c * T_u;
+		stat_charged += max_c;
 	}
 	if (d > 0){
 		b = b - max_d * eta_d * T_u;
+		stat_discharged += max_d;
 		if (max_d < d){
 			loss_events += 1;
 			load_deficit += (d - max_d);
@@ -240,6 +252,7 @@ std::pair<double, double> maximise_solar_charging(double b, double ev_b, double 
 	
 	if (z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
+		ev_charged += maxCharging;
 		ChargingEvent event;
 		event.hour = hour;
 		event.chargingAmount = maxCharging;
@@ -248,6 +261,7 @@ std::pair<double, double> maximise_solar_charging(double b, double ev_b, double 
 	if (c > 0 && is_home == true && z == false){
 		double max_c_ev = calc_max_charging_ev(c, ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+		ev_charged += max_c_ev;
 		if (max_c_ev > 0){
 			ChargingEvent event;
 			event.hour = hour;
@@ -258,17 +272,21 @@ std::pair<double, double> maximise_solar_charging(double b, double ev_b, double 
 		if(res > 0){
 			max_c = fmin(calc_max_charging(res, b), alpha_c);
 			b = b + max_c * eta_c * T_u;
+			stat_charged += max_c;
 		}
 	}
 	else if (c > 0 && is_home == false || c > 0 && z == true){
 		b = b + max_c * eta_c * T_u;
+		stat_charged += max_c;
 	}
 	if (d > 0){
 		b = b - max_d * eta_d * T_u;
+		stat_discharged += max_d;
 		double res = d - max_d;
 		if (res > 0 && z == false && is_home == true){
 			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), charging_rate);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
+			ev_discharged += max_d_ev;
 			res = res - max_d_ev;
 		}
 		if (res > 0){
@@ -285,6 +303,7 @@ std::pair<double, double> maximise_solar_charging_safe(double b, double ev_b, do
 	double res_c;
 	if (z == true){
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
+		ev_charged += maxCharging;
 		ChargingEvent event;
 		event.hour = hour;
 		event.chargingAmount = maxCharging;
@@ -293,6 +312,7 @@ std::pair<double, double> maximise_solar_charging_safe(double b, double ev_b, do
 	if (c > 0 && is_home == true && z == false){
 		double max_c_ev = calc_max_charging_ev(c, ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+		ev_charged += max_c_ev;
 		if (max_c_ev > 0){
 			ChargingEvent event;
 			event.hour = hour;
@@ -303,17 +323,21 @@ std::pair<double, double> maximise_solar_charging_safe(double b, double ev_b, do
 		if(res_c > 0){
 			max_c = fmin(calc_max_charging(res_c, b), alpha_c);
 			b = b + max_c * eta_c * T_u;
+			stat_charged += max_c;
 		}
 	}
 	else if (c > 0 && is_home == false || c > 0 && z == true){
 		b = b + max_c * eta_c * T_u;
+		stat_charged += max_c;
 	}
 	if (d > 0){
 		b = b - max_d * eta_d * T_u;
+		stat_discharged += max_d;
 		double res = d - max_d;
 		if (res > 0 && z == false && is_home == true && dont_discharge == false){
 			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), charging_rate);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
+			ev_discharged += max_d_ev;
 			res = res - max_d_ev;
 		}
 		if (res > 0){
@@ -332,6 +356,7 @@ std::pair<double, double> bidirectional_optimal(double b, double ev_b, double c2
 	if (c2 > 0 && is_home == true){
 		double max_c_ev = calc_max_charging_ev(c2, ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+		ev_charged += max_c_ev;
 		if (max_c_ev > 0){
 			ChargingEvent event;
 			event.hour = hour;
@@ -342,17 +367,21 @@ std::pair<double, double> bidirectional_optimal(double b, double ev_b, double c2
 		if (res > 0){
 			max_c2 = fmin(calc_max_charging(res, b), alpha_c);
 			b = b + max_c2 * eta_c * T_u;
+			stat_charged += max_c2;
 		}
 	}
 	else if (c2 > 0 && is_home == false){
 		b = b + max_c2 * eta_c * T_u;
+		stat_charged += max_c2;
 	}
 	if (d2 > 0){
 		b = b - max_d2 * eta_d * T_u;
+		stat_discharged += max_d2;
 		double res = d2 - max_d2;
 		if (res > 0 && is_home == true){
 			max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), charging_rate);
 			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
+			ev_discharged += max_d_ev;
 			res = res - max_d_ev;
 		}
 		if (res > 0){
@@ -429,15 +458,11 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		
 		int ev_day = day + Ev_start;
 		ev_day = ev_day % 365;
+		//cout << "Day: " << day << endl;
 		for (int hour = 0; hour < 24; hour++){
 		bool z = false;
-		//cout << "------------------------"<<endl;
-		//cout <<  "Day: " << day << "Hour: " << hour << endl;
-		// wrap around to the start of the trace if we hit the end.
-	
-		//int t =  start_index;
+		
 		int t = day * 24 + start_index + hour;
-		//cout << "t: " << t << "start_index: " << start_index<< endl;
 		index_t_solar = t % trace_length_solar;
 		index_t_load = t % trace_length_load;
 

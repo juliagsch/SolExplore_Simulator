@@ -50,6 +50,12 @@ double static kWh_in_one_cell = 0.011284;
 double static num_cells_steps = 400; // search in total of n steps for cells
 double static num_pv_steps = 350; // search in total of n steps for pv
 
+extern int ev_charged;
+extern int ev_discharged;
+extern int stat_charged;
+extern int stat_discharged;
+
+
 extern std::vector<double> socValues;
 
 
