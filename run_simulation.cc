@@ -29,6 +29,7 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 	// get number of timeslots in each chunk
 	//zb 100 days a 24h if we have hourly data in the input files 
 	int t_chunk_size = chunk_size*(24/T_u);
+	cout << "t_chunk_size = " << t_chunk_size << endl;
 
 	vector <vector<SimulationResult> > results;
 
@@ -47,7 +48,11 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 		//int chunk_start = chunk_index * 24;
 		//TODO: modify this if we know the first day of the chunk is for e.g. a monday, then ev_Start should also be a monday
 		int Ev_start = rand() % evRecords.size();
+		// to start on a Monday
+		Ev_start = 0;
 		//int chunk_end = chunk_start + t_chunk_size;
+		battery_result = 0;
+		pv_result = 4;
 
 		sim(load, solar, 0, t_chunk_size, battery_result, pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 
@@ -138,7 +143,9 @@ int main(int argc, char ** argv) {
 
 	// TODO: Add output file for kwH values
 	// output  ev_charged, ev_discharged, stat_charged, stat_discharged
-	cout << ev_charged << "\t" << ev_discharged << "\t" << stat_charged << "\t" << stat_discharged << endl;
+	//cout << ev_charged << "\t" << ev_discharged << "\t" << stat_charged << "\t" << stat_discharged << endl;
+	cout << "Grid import: " << grid_import << endl;
+	cout << "Total load: " << total_load << endl;
 // evval10_interum_use.py will store all outputs in a csv file
 	return 0;
 

@@ -54,7 +54,8 @@ extern int ev_charged;
 extern int ev_discharged;
 extern int stat_charged;
 extern int stat_discharged;
-
+extern double grid_import;
+extern double total_load;
 
 extern std::vector<double> socValues;
 
