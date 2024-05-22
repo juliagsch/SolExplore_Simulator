@@ -168,6 +168,29 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 	return std::make_pair(ev_b, b);
 }
 
+std::pair<double, double> no_ev(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, double is_home, int hour)
+{
+	
+	if (c > 0)
+	{
+		b = b + max_c * eta_c * T_u;
+		stat_charged += max_c;
+	}
+	if (d > 0)
+	{
+		b = b - max_d * eta_d * T_u;
+		stat_discharged += max_d;
+		if (max_d < d)
+		{
+			loss_events += 1;
+			load_deficit += (d - max_d);
+			grid_import += (d - max_d);
+		}
+	}
+
+	return std::make_pair(ev_b, b);
+}
+
 std::pair<double, double> unidirectional_dynamic(double b, double ev_b, double d2, double max_d2, double c2, double max_c2, bool is_home, int hour)
 {
 
@@ -504,7 +527,26 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			operationResult = unidirectional_dynamic(b, ev_b, d2, max_d2, c2, max_c2, is_home, hour);
 			//cout << "AFTER ev_b: " << operationResult.first << "b: " << operationResult.second << endl;
 		}
-		
+		else if (Operation_policy == "no_ev")
+		{
+			// cout << "EV DAY: " << allDailyStatuses[ev_day][hour].dayNumber << "hour: " << hour << "nextDept: " << convertTimeToHour(allDailyStatuses[ev_day][hour].nextDepartureTime) << endl;
+
+			
+			maxCharging = 0.0;
+			
+			double hourly_laod = load_trace[index_t_load] + maxCharging;
+			total_load += hourly_laod;
+			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
+			// c = 0; for W+E and E sceanrios
+
+			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
+			max_c = fmin(calc_max_charging(c, b), alpha_c);
+			max_d = fmin(calc_max_discharging(d, b), alpha_d);
+			// cout << "BEFORE c: " << c << "d: " << d << "max_c: " << max_c << "max_d: " << max_d << "ev_b: " << ev_b << "b : " << b << endl;
+
+			operationResult = no_ev(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home, hour);
+			// cout << "AFTER ev_b: " << operationResult.first << "b: " << operationResult.second << endl;
+		}
 		else if (Operation_policy == "safe_unidirectional"){
 			//cout << "EV DAY: " << allDailyStatuses[ev_day][hour].dayNumber << "hour: " << hour << "nextDept: " << convertTimeToHour(allDailyStatuses[ev_day][hour].nextDepartureTime) << endl;
 
@@ -521,6 +563,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			double hourly_laod = load_trace[index_t_load] + maxCharging;
 			total_load += hourly_laod;
 			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
+			// c = 0; for W+E and E sceanrios
+
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
 			max_c = fmin(calc_max_charging(c, b), alpha_c);
 			max_d = fmin(calc_max_discharging(d, b), alpha_d);
@@ -607,7 +651,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 				z = false;
 			}
 			double hourly_laod = load_trace[index_t_load] + maxCharging;
+			total_load += hourly_laod;
 			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
+			//c = 0; for W+E and E sceanrios
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
 			max_c = fmin(calc_max_charging(c, b), alpha_c);
 			max_d = fmin(calc_max_discharging(d, b), alpha_d);

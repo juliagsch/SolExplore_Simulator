@@ -79,7 +79,7 @@ std::string extract_wfh_type(const std::string &ev_filename)
 
 
 
-int extractLoadNumber(const std::string &filename)
+/*int extractLoadNumber(const std::string &filename)
 {
     // Find the position of "load_"
     size_t loadPos = filename.find("load_");
@@ -106,7 +106,7 @@ int extractLoadNumber(const std::string &filename)
 }
 
 
-
+*/
 
 
 vector<double> read_data_from_file(istream &datafile, int limit = INT_MAX) {
@@ -241,7 +241,7 @@ int process_input(char** argv, bool process_metric_input) {
         ifstream loadstream(loadfile.c_str());
         load = read_data_from_file(loadstream);
     }
-     loadNumber = extractLoadNumber(loadfile);
+     //loadNumber = extractLoadNumber(loadfile);
 
 #ifdef DEBUG
 	cout << "checking for errors in load file..." << endl;
@@ -314,7 +314,7 @@ int process_input(char** argv, bool process_metric_input) {
     cout << "charging_rate_string = " << charging_rate_string << ", charging_rate = " << charging_rate << endl;
 #endif
 
-    std::set<std::string> validOperationPolicyOptions = {"optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional", "hybrid_bidirectional"};
+    std::set<std::string> validOperationPolicyOptions = {"optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional", "hybrid_bidirectional", "no_ev"};
 
        
     std::string operationPolicyInput = argv[++i]; 

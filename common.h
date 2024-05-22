@@ -43,7 +43,7 @@ extern std::string Operation_policy;
 
 
 // defines the number of samples, set via command line input
-int static number_of_chunks = 100;
+int static number_of_chunks = 365;
 
 double static T_u = 1.0; // this is the time unit, representing the number of hours in each time slot of the load and solar traces
 double static kWh_in_one_cell = 0.011284;
