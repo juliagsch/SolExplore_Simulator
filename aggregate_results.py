@@ -33,8 +33,8 @@ def compute_total_emissions(operation, solar):
             total_emissions += emissions_archetype
         
         # Convert kg to megatons
-        total_emissions_gigatons = round(total_emissions / 1e6)
-        results.append({'Conversion Rate (%)': rate, 'Total Emissions (Mega Tonnes)': total_emissions_gigatons})
+        total_emissions_gigatons = round(total_emissions / 1000)
+        results.append({'Conversion Rate (%)': rate, 'Total Emissions T': total_emissions_gigatons})
     
     # Output to CSV
     df = pd.DataFrame(results)
