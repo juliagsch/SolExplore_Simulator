@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load data from CSV files
-uni_best = pd.read_csv('e_uni_best_all_scenarios.csv')
-uni_worst = pd.read_csv('e_uni_worst_all_scenarios.csv')
-bi_best = pd.read_csv('e_bi_best_all_scenarios.csv')
-bi_worst = pd.read_csv('e_bi_worst_all_scenarios.csv')
+uni_best = pd.read_csv('1707_e_uni_best_all_scenarios.csv')
+uni_worst = pd.read_csv('1707_e_uni_worst_all_scenarios.csv')
+bi_best = pd.read_csv('1707_e_bi_best_all_scenarios.csv')
+bi_worst = pd.read_csv('1707_e_bi_worst_all_scenarios.csv')
 
 # Function to convert emission values from kilotonnes to megatonnes
 def convert_to_megatonnes(df):
@@ -54,7 +54,7 @@ def plot_graph(df_best, df_worst, title):
     plt.xlabel('Conversion Rate (%)')
     plt.ylabel('Total CO2 Emissions (Megatonnes)')
     plt.xlim([0, 125])  # Extend x-axis to 110 to fit labels, but no ticks beyond 100
-    plt.ylim([6, 15])  # Adjust according to your data range (6000 to 15000 kilotonnes -> 6 to 15 megatonnes)
+    plt.ylim([6, 20])  # Adjust according to your data range (6000 to 15000 kilotonnes -> 6 to 15 megatonnes)
     plt.xticks(range(0, 101, 10))  # Ensure ticks are only up to 100
     
     # Apply custom legend

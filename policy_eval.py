@@ -15,7 +15,9 @@ base_path = os.path.abspath("./policy_data")  # This makes the base path absolut
 # Archetypes and their corresponding folders
 archetypes = ["Detached", "Semi_Detached", "Terraced"]
 operations = ["safe_unidirectional", "hybrid_bidirectional"]
-wfh_types = ["T1", "T2", "T3"]
+#wfh_types = ["T1", "T2", "T3"]
+# only model T2 for W+E+P
+wfh_types = ["T2"]
 solar_conditions = {"worst": "Lerwick_pv.txt", "best": "Weymouth_pv.txt"}
 
 # Prepare DataFrame to collect results
@@ -42,7 +44,9 @@ for archetype in archetypes:
                         continue  # Skip this solar file if it does not exist
                     
                     # Construct command
-                    command = f"./bin/sim 2100 480 10 20 1 0.5 0.95 365 {house_file_path} {solar_file_path} 0.8 0.2 60.0 7.4 {op} {base_path}/ev_UK/merged_{wfh_type}_UK.csv 0 4"
+                    command = f"./bin_pvandev/sim 2100 480 10 20 1 0.5 0.95 365 {house_file_path} {solar_file_path} 0.8 0.2 60.0 7.4 {op} {base_path}/ev_UK/merged_{wfh_type}_UK.csv 0 4"
+                    # call this command if there is no PV in the scenario
+                    #command = f"./bin_nosolar/sim 2100 480 10 20 1 0.5 0.95 365 {house_file_path} {solar_file_path} 0.8 0.2 60.0 7.4 {op} {base_path}/ev_UK/merged_{wfh_type}_UK.csv 0 4"
 
                     print("Executing command: " + command)
                     
@@ -66,4 +70,4 @@ for archetype in archetypes:
 
 # Convert results to DataFrame and save to CSV
 df_results = pd.DataFrame(results)
-df_results.to_csv("simulation_results_new.csv", index=False)
+df_results.to_csv("simulation_results_1707_W+P+E.csv", index=False)

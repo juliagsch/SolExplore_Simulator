@@ -556,12 +556,20 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 				maxCharging = 0.0;
 			}
 			//cout << "maxCharging: " << maxCharging << "ev_b: " << ev_b << endl;
+			
+		
 
-			if(maxCharging > 0){
+			if (maxCharging > 0)
+			{
 				z = true;
 			}
+			//maxCharging = 0.0;
+			//z = false;
+			//ev_b = 0;
+			//is_home = false;
 			double hourly_laod = load_trace[index_t_load] + maxCharging;
 			total_load += hourly_laod;
+			//solar_trace[index_t_solar] = 0;
 			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
 			// c = 0; for W+E and E sceanrios
 
@@ -650,8 +658,13 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			} else {
 				z = false;
 			}
+			//maxCharging = 0.0;
+			//z = false;
+			//ev_b = 0;
+			//is_home = false;
 			double hourly_laod = load_trace[index_t_load] + maxCharging;
 			total_load += hourly_laod;
+			//solar_trace[index_t_solar] = 0;
 			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
 			//c = 0; for W+E and E sceanrios
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);

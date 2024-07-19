@@ -38,6 +38,7 @@ def compute_total_emissions(operation, solar):
                 try:
                     emissions_nc = data.loc[(data['Archetype'] == archetype) & 
                                             (data['Scenario'] == 'W'), 'Emissions (kg CO2)'].values[0]
+                    emissions_nc = emissions_nc + 319.5  # Add the emissions for the new FF emissions, as it was 86.5 before ans id 406 now
                 except IndexError:
                     print(f"No data for {archetype}, 'not-converted'")
                     emissions_nc = 0  # Default to zero if no data found
@@ -54,7 +55,7 @@ def compute_total_emissions(operation, solar):
     
     # Output to CSV
     df = pd.DataFrame(results)
-    filename = f'e_{operation}_{solar}_all_scenarios.csv'
+    filename = f'1707_e_{operation}_{solar}_all_scenarios.csv'
     df.to_csv(filename, index=False)
     print(f'Output file {filename} has been created.')
 

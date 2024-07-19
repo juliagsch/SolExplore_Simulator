@@ -144,8 +144,8 @@ int main(int argc, char ** argv) {
 	// TODO: Add output file for kwH values
 	// output  ev_charged, ev_discharged, stat_charged, stat_discharged
 	//cout << ev_charged << "\t" << ev_discharged << "\t" << stat_charged << "\t" << stat_discharged << endl;
-	cout << "Grid import: " << grid_import << endl;
-	cout << "Total load: " << total_load << endl;
+	//cout << "Grid import: " << grid_import << endl;
+	//cout << "Total load: " << total_load << endl;
 // evval10_interum_use.py will store all outputs in a csv file
 	return 0;
 

@@ -7,22 +7,22 @@ Terraced,W,uni,best,797
 Terraced,W,uni,worst,797
 Terraced,W,bi,best,797
 Terraced,W,bi,worst,797
-Terraced,E,uni,best,758
-Terraced,E,uni,worst,758
-Terraced,E,bi,best,652
-Terraced,E,bi,worst,652
-Terraced,E+P,uni,best,571
-Terraced,E+P,uni,worst,587
-Terraced,E+P,bi,best,752
-Terraced,E+P,bi,worst,765
-Terraced,W+E,uni,best,675
-Terraced,W+E,uni,worst,675
-Terraced,W+E,bi,best,552
-Terraced,W+E,bi,worst,552
-Terraced,W+P = P,uni,best,691
-Terraced,W+P = P,uni,worst,701
-Terraced,W+P = P,bi,best,691
-Terraced,W+P = P,bi,worst,701
+Terraced,E,uni,best,864
+Terraced,E,uni,worst,864
+Terraced,E,bi,best,756
+Terraced,E,bi,worst,756
+Terraced,E+P,bi,best,571
+Terraced,E+P,bi,worst,587
+Terraced,E+P,uni,best,752
+Terraced,E+P,uni,worst,765
+Terraced,W+E,uni,best,779
+Terraced,W+E,uni,worst,779
+Terraced,W+E,bi,best,646
+Terraced,W+E,bi,worst,646
+Terraced,W+P = P,uni,best,1011
+Terraced,W+P = P,uni,worst,1021
+Terraced,W+P = P,bi,best,1011
+Terraced,W+P = P,bi,worst,1021
 Detached,W+E+P,uni,best,761
 Detached,W+E+P,uni,worst,773
 Detached,W+E+P,bi,best,433
@@ -31,22 +31,22 @@ Detached,W,uni,best,898
 Detached,W,uni,worst,898
 Detached,W,bi,best,898
 Detached,W,bi,worst,898
-Detached,E,uni,best,850
-Detached,E,uni,worst,850
-Detached,E,bi,best,724
-Detached,E,bi,worst,724
-Detached,E+P,uni,best,641
-Detached,E+P,uni,worst,661
-Detached,E+P,bi,best,843
-Detached,E+P,bi,worst,857
-Detached,W+E,uni,best,766
-Detached,W+E,uni,worst,766
-Detached,W+E,bi,best,624
-Detached,W+E,bi,worst,624
-Detached,W+P = P,uni,best,782
-Detached,W+P = P,uni,worst,794
-Detached,W+P = P,bi,best,782
-Detached,W+P = P,bi,worst,794
+Detached,E,uni,best,965
+Detached,E,uni,worst,965
+Detached,E,bi,best,835
+Detached,E,bi,worst,835
+Detached,E+P,bi,best,641
+Detached,E+P,bi,worst,661
+Detached,E+P,uni,best,843
+Detached,E+P,uni,worst,857
+Detached,W+E,uni,best,880
+Detached,W+E,uni,worst,880
+Detached,W+E,bi,best,727
+Detached,W+E,bi,worst,727
+Detached,W+P = P,uni,best,1102
+Detached,W+P = P,uni,worst,1113
+Detached,W+P = P,bi,best,1102
+Detached,W+P = P,bi,worst,1113
 S-Detached,W+E+P,uni,best,738
 S-Detached,W+E+P,uni,worst,750
 S-Detached,W+E+P,bi,best,412
@@ -55,19 +55,19 @@ S-Detached,W,uni,best,873
 S-Detached,W,uni,worst,873
 S-Detached,W,bi,best,873
 S-Detached,W,bi,worst,873
-S-Detached,E,uni,best,827
-S-Detached,E,uni,worst,827
-S-Detached,E,bi,best,705
-S-Detached,E,bi,worst,705
-S-Detached,E+P,uni,best,622
-S-Detached,E+P,uni,worst,640
-S-Detached,E+P,bi,best,821
-S-Detached,E+P,bi,worst,835
-S-Detached,W+E,uni,best,744
-S-Detached,W+E,uni,worst,744
-S-Detached,W+E,bi,best,605
-S-Detached,W+E,bi,worst,605
-S-Detached,W+P = P,uni,best,760
-S-Detached,W+P = P,uni,worst,771
-S-Detached,W+P = P,bi,best,760
-S-Detached,W+P = P,bi,worst,771
+S-Detached,E,uni,best,940
+S-Detached,E,uni,worst,940
+S-Detached,E,bi,best,815
+S-Detached,E,bi,worst,815
+S-Detached,E+P,bi,best,622
+S-Detached,E+P,bi,worst,640
+S-Detached,E+P,uni,best,821
+S-Detached,E+P,uni,worst,835
+S-Detached,W+E,uni,best,856
+S-Detached,W+E,uni,worst,856
+S-Detached,W+E,bi,best,710
+S-Detached,W+E,bi,worst,710
+S-Detached,W+P = P,uni,best,1079
+S-Detached,W+P = P,uni,worst,1091
+S-Detached,W+P = P,bi,best,1079
+S-Detached,W+P = P,bi,worst,1091
