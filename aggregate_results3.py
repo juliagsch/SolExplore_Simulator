@@ -55,7 +55,7 @@ def compute_total_emissions(operation, solar):
     
     # Output to CSV
     df = pd.DataFrame(results)
-    filename = f'1707_e_{operation}_{solar}_all_scenarios.csv'
+    filename = f'2407_e_{operation}_{solar}_all_scenarios.csv'
     df.to_csv(filename, index=False)
     print(f'Output file {filename} has been created.')
 
