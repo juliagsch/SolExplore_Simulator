@@ -56,6 +56,8 @@ extern int stat_charged;
 extern int stat_discharged;
 extern double grid_import;
 extern double total_load;
+extern double total_cost;
+extern double total_hours;
 
 extern std::vector<double> socValues;
 

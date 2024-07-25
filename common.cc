@@ -37,6 +37,8 @@ int stat_discharged = 0;
 
 double grid_import = 0.0;
 double total_load = 0.0;
+double total_cost = 0.0;
+double total_hours = 0.0;
 // common.cc
 std::string EV_charging = "naive";               // Default policy
 std::string Operation_policy = "unidirectional"; // Default policy
