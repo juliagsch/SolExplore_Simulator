@@ -200,9 +200,6 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 
 // call it with a specific battery and PV size and want to compute the loss
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start){
-
-	
-
 	// cells is the max battery size
 	double b =  5.0;
 	// start each simulation with a fully charged battery
@@ -275,7 +272,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
 			max_c = fmin(calc_max_charging(c, b), alpha_c);
 			max_d = fmin(calc_max_discharging(d, b), alpha_d);
-			//cout << "BEFORE c: " << c << "d: " << d << "max_c: " << max_c << "max_d: " << max_d << "ev_b: " << ev_b << "b : " << b << endl;
+			cout << "DAy: " << day << " - hour: " << hour << endl;
+			cout << "BEFORE c: " << c << "- d: " << d << "- max_c: " << max_c << "- max_d: " << max_d << "- ev_b: " << ev_b << "- b : " << b << endl;
 			operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home, hour);
 		}
 		else if (Operation_policy == "hybrid_bidirectional"){

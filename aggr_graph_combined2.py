@@ -4,10 +4,10 @@ import seaborn as sns
 
 # This file creates the aggregated scenarios graph with uni and bidirectional scenarios all in the same file
 # Load data from CSV files
-uni_best = pd.read_csv('1707_e_uni_best_all_scenarios.csv')
-uni_worst = pd.read_csv('1707_e_uni_worst_all_scenarios.csv')
-bi_best = pd.read_csv('1707_e_bi_best_all_scenarios.csv')
-bi_worst = pd.read_csv('1707_e_bi_worst_all_scenarios.csv')
+uni_best = pd.read_csv('2507_e_uni_best_all_scenarios.csv')
+uni_worst = pd.read_csv('2507_e_uni_worst_all_scenarios.csv')
+bi_best = pd.read_csv('2507_e_bi_best_all_scenarios.csv')
+bi_worst = pd.read_csv('2507_e_bi_worst_all_scenarios.csv')
 
 # Function to convert emission values from kilotonnes to megatonnes
 def convert_to_megatonnes(df):
@@ -25,8 +25,6 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
     plt.figure(figsize=(12, 6))  # Increase figure size for better clarity
     uni_scenarios = uni_best.columns[1:]  # Extract scenario names from uni_best
     bi_scenarios = bi_best.columns[1:]
-    #print(uni_scenarios)
-    #print(bi_scenarios)
     palette = sns.color_palette("husl", len(set(uni_scenarios + bi_scenarios)))  # Define color palette
 
     combined_scenarios = list(set(uni_scenarios)) 
@@ -56,6 +54,10 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                     label = 'H + E (Uni)'
                 if scenario == 'E+P':
                     label = 'E + P (Uni)'
+                if scenario == 'H+P+E+S':
+                    label = 'H + P + E + S (Uni)'
+
+
                 
 
                 # Plot unidirectional best scenario lines
@@ -78,6 +80,8 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                     label = 'H + E (Bi)'
                 if scenario == 'E+P':
                     label = 'E + P (Bi)'
+                if scenario == 'H+P+E+S':
+                    label = 'H + P + E + S (Bi)'
 
                 # Plot bidirectional best scenario lines
                 sns.lineplot(x='Conversion Rate (%)', y=scenario, data=bi_best, 

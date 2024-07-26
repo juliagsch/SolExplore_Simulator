@@ -14,7 +14,7 @@ household_numbers = {
 conversion_rates = list(range(0, 101, 5))  # From 0 to 100 in steps of 5%
 
 # Define the scenarios to include in the output
-included_scenarios = ["W+E", "W+P = P", "E+P", "W+E+P"]
+included_scenarios = ["H+E", "H+P = P", "E+P", "H+E+P", "H+P+E+S"]
 
 # Process the data to compute total emissions for each operation and solar combination
 def compute_total_emissions(operation, solar):
@@ -49,13 +49,13 @@ def compute_total_emissions(operation, solar):
             
             # Convert kg to megatons
             total_emissions_megatons = round(total_emissions / 1e6)
-            row[f'Emissions_{scenario} (Kilo Tonnes)'] = total_emissions_megatons
+            row[f'{scenario}'] = total_emissions_megatons
         
         results.append(row)
     
     # Output to CSV
     df = pd.DataFrame(results)
-    filename = f'2407_e_{operation}_{solar}_all_scenarios.csv'
+    filename = f'2507_e_{operation}_{solar}_all_scenarios.csv'
     df.to_csv(filename, index=False)
     print(f'Output file {filename} has been created.')
 

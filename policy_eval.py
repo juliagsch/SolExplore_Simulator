@@ -44,7 +44,7 @@ for archetype in archetypes:
                         continue  # Skip this solar file if it does not exist
                     
                     # Construct command
-                    command = f"./bin_S_E_P/sim 2100 480 10 20 1 0.5 0.95 365 {house_file_path} {solar_file_path} 0.8 0.2 60.0 7.4 {op} {base_path}/ev_UK/merged_{wfh_type}_UK.csv 0 4"
+                    command = f"./bin/sim 2100 480 10 20 1 0.5 0.95 365 {house_file_path} {solar_file_path} 0.8 0.2 60.0 7.4 {op} {base_path}/ev_UK/merged_{wfh_type}_UK.csv 0 4"
                     # call this command if there is no PV in the scenario
                     #command = f"./bin_nosolar/sim 2100 480 10 20 1 0.5 0.95 365 {house_file_path} {solar_file_path} 0.8 0.2 60.0 7.4 {op} {base_path}/ev_UK/merged_{wfh_type}_UK.csv 0 4"
 
@@ -70,4 +70,4 @@ for archetype in archetypes:
 
 # Convert results to DataFrame and save to CSV
 df_results = pd.DataFrame(results)
-df_results.to_csv("simulation_results_1707_W+P+E+S.csv", index=False)
+df_results.to_csv("simulation_results_2607_W+P+E+S.csv", index=False)

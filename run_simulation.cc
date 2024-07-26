@@ -67,6 +67,6 @@ int main(int argc, char ** argv) {
 	cout << "Grid import: " << grid_import << endl;
 	//cout << "Total Cost: " << total_cost << endl;
 	//cout << "Total Hours: " << total_hours << endl;
-	//cout << "Total load: " << total_load << endl;
+	cout << "Total load: " << total_load << endl;
 	return 0;
 }
