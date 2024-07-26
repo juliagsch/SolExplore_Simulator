@@ -25,8 +25,8 @@ def create_confidence_bar_chart(archetype):
     best_data = archetype_data[archetype_data['Solar'] == 'best'].copy()
     worst_data = archetype_data[archetype_data['Solar'] == 'worst'].copy()
 
-    # Merge on policy and WFH Type
-    merged_data = pd.merge(best_data, worst_data, on=['Operation Policy', 'WFH Type'], suffixes=('_best', '_worst'))
+    # Merge on policy and CAH Type
+    merged_data = pd.merge(best_data, worst_data, on=['Operation Policy', 'CAH Type'], suffixes=('_best', '_worst'))
 
     # Ensure not to proceed if merged data is empty
     if merged_data.empty:
@@ -38,7 +38,7 @@ def create_confidence_bar_chart(archetype):
 
     # Plotting the bar chart
     plt.figure(figsize=(10, 6))
-    bar_plot = sns.barplot(x='Operation Policy', y='Grid Emissions kg_best', hue='WFH Type', data=merged_data, palette=custom_colors)
+    bar_plot = sns.barplot(x='Operation Policy', y='Grid Emissions kg_best', hue='CAH Type', data=merged_data, palette=custom_colors)
 
     plt.ylabel('CO2 Emissions (kg)')
     #plt.title(f'CO2 Emissions for {archetype} Houses')
@@ -66,7 +66,7 @@ def create_confidence_bar_chart(archetype):
     plt.ylim(0, max_emissions + 0.2 * max_emissions)  # Increase y-axis limit by 20%
 
     # Adjust the legend position
-    plt.legend(title='WFH Type', loc='upper right', bbox_to_anchor=(1, 1))
+    plt.legend(title='CAH Type', loc='upper right', bbox_to_anchor=(1, 1))
 
     plt.tight_layout()
     plt.show()

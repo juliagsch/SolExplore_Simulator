@@ -31,7 +31,7 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 	// to start on a Monday
 	Ev_start = 0;
 	// set battery to 0 if no stationary storage
-	battery_result = 5;
+	battery_result = 0;
 	pv_result = 4;
 
 	sim(load, solar, 0, t_chunk_size, battery_result, pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
@@ -65,8 +65,8 @@ int main(int argc, char ** argv) {
 
 	run_simulations(load, solar, metric, days_in_chunk, number_of_chunks, evRecords, allDailyStatuses, max_soc, min_soc);
 	cout << "Grid import: " << grid_import << endl;
-	//cout << "Total Cost: " << total_cost << endl;
+	cout << "Total Cost: " << total_cost << endl;
 	//cout << "Total Hours: " << total_hours << endl;
-	cout << "Total load: " << total_load << endl;
+	//cout << "Total load: " << total_load << endl;
 	return 0;
 }

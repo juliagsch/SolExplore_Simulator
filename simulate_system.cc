@@ -201,7 +201,7 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 // call it with a specific battery and PV size and want to compute the loss
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start){
 	// cells is the max battery size
-	double b =  5.0;
+	double b =  0.0;
 	// start each simulation with a fully charged battery
 	loss_events = 0;
 	load_deficit = 0;
@@ -267,13 +267,36 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			//is_home = false;
 			double hourly_laod = load_trace[index_t_load] + maxCharging;
 			total_load += hourly_laod;
+			
 			// solar_trace[index_t_solar] = 0; for W+E and E sceanrios
 			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
+			// if we use the grid to charge the EV, assume that we first try to maximise charging from solar and covering load from solar
+		
+			// we assume we have no battery here
+			//!! modify the battery size to be 0
+			double after_load = load_trace[index_t_load] - solar_trace[index_t_solar] * pv;
+			if (after_load < 0){
+				// only need the grid to charge the EV at this hour
+				double rest_ev = maxCharging + after_load;
+				total_cost = total_cost + rest_ev * 0.07;
+			} 
+			else if (after_load > 0)
+			{
+				if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4){
+					// special grid tariff for home load
+					total_cost = total_cost + after_load * 0.07;
+					total_cost = total_cost + maxCharging * 0.07;
+				}
+				else{
+					total_cost = total_cost + after_load * 0.35;
+					total_cost = total_cost + maxCharging * 0.07;
+				}
+			}
+			
 			max_c = fmin(calc_max_charging(c, b), alpha_c);
 			max_d = fmin(calc_max_discharging(d, b), alpha_d);
-			cout << "DAy: " << day << " - hour: " << hour << endl;
-			cout << "BEFORE c: " << c << "- d: " << d << "- max_c: " << max_c << "- max_d: " << max_d << "- ev_b: " << ev_b << "- b : " << b << endl;
+			//cout << "BEFORE c: " << c << "- d: " << d << "- max_c: " << max_c << "- max_d: " << max_d << "- ev_b: " << ev_b << "- b : " << b << endl;
 			operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home, hour);
 		}
 		else if (Operation_policy == "hybrid_bidirectional"){
@@ -294,6 +317,36 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			// solar_trace[index_t_solar] = 0; for W+E and E sceanrios
 			c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
 			d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
+			// we assume we have no battery here
+			//!! modify the battery size to be 0
+			double after_load = load_trace[index_t_load] - solar_trace[index_t_solar] * pv;
+			if (after_load < 0)
+			{
+				// only need the grid to charge the EV at this hour
+				double rest_ev = maxCharging + after_load;
+				total_cost = total_cost + rest_ev * 0.07;
+			}
+			else if (after_load > 0){
+					if ( z == false && is_home == true){
+						// try to cover rest load from EV before using the grid
+						double max_d_ev = fmin(calc_max_discharging_ev(after_load, ev_b, min_soc, ev_battery_capacity), charging_rate);
+						after_load = after_load -  max_d_ev;
+					}
+					if (after_load > 0){
+						if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4)
+						{
+							// special grid tariff for home load
+							total_cost = total_cost + after_load * 0.07;
+							total_cost = total_cost + maxCharging * 0.07;
+						}
+						else
+						{
+							total_cost = total_cost + after_load * 0.35;
+							total_cost = total_cost + maxCharging * 0.07;
+						}
+					}
+				}
+
 			max_c = fmin(calc_max_charging(c, b), alpha_c);
 			max_d = fmin(calc_max_discharging(d, b), alpha_d);
 			//cout << "BEFORE c: " << c << "d: " << d << "max_c: " << max_c << "max_d: " << max_d << "ev_b: " << ev_b << "b : " <<b << endl;

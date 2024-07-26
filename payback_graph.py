@@ -10,7 +10,7 @@ except FileNotFoundError as e:
     print(f"Error: {e}")
     exit()
 
-merged_data = pd.merge(opex_savings_data, capex_data, on=["Archetype", "WFH Type", "Operation", "Solar"])
+merged_data = pd.merge(opex_savings_data, capex_data, on=["Archetype", "CAH Type", "Operation", "Solar"])
 
 merged_data['Payback Time (years)'] = merged_data['Cost'] / merged_data['OPEX Savings']
 
@@ -28,8 +28,8 @@ def create_payback_time_bar_chart(archetype):
     best_data = archetype_data[archetype_data['Solar'] == 'best'].copy()
     worst_data = archetype_data[archetype_data['Solar'] == 'worst'].copy()
 
-    # Merge on policy and WFH Type
-    merged_archetype_data = pd.merge(best_data, worst_data, on=['Operation Policy', 'WFH Type'], suffixes=('_best', '_worst'))
+    # Merge on policy and CAH Type
+    merged_archetype_data = pd.merge(best_data, worst_data, on=['Operation Policy', 'CAH Type'], suffixes=('_best', '_worst'))
     
     # Ensure not to proceed if merged data is empty
     if merged_archetype_data.empty:
@@ -41,7 +41,7 @@ def create_payback_time_bar_chart(archetype):
 
     # Plotting the bar chart
     plt.figure(figsize=(10, 6))
-    bar_plot = sns.barplot(x='Operation Policy', y='Payback Time (years)_best', hue='WFH Type', data=merged_archetype_data, palette=custom_colors)
+    bar_plot = sns.barplot(x='Operation Policy', y='Payback Time (years)_best', hue='CAH Type', data=merged_archetype_data, palette=custom_colors)
 
     plt.ylabel('Payback Time (years)')
    # plt.title(f'Payback Time for {archetype} Houses')
@@ -69,7 +69,7 @@ def create_payback_time_bar_chart(archetype):
     plt.ylim(0, 17)
 
     # Adjust the legend position
-    plt.legend(title='WFH Type', loc='upper right', bbox_to_anchor=(1, 1))
+    plt.legend(title='CAH Type', loc='upper right', bbox_to_anchor=(1, 1))
 
     plt.tight_layout()
     plt.show()

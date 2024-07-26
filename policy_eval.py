@@ -15,9 +15,9 @@ base_path = os.path.abspath("./policy_data")  # This makes the base path absolut
 # Archetypes and their corresponding folders
 archetypes = ["Detached", "Semi_Detached", "Terraced"]
 operations = ["safe_unidirectional", "hybrid_bidirectional"]
-#wfh_types = ["T1", "T2", "T3"]
+wfh_types = ["T1", "T2", "T3"]
 # only model T2 for W+E+P
-wfh_types = ["T2"]
+#wfh_types = ["T2"]
 solar_conditions = {"worst": "Lerwick_pv.txt", "best": "Weymouth_pv.txt"}
 
 # Prepare DataFrame to collect results
@@ -55,7 +55,7 @@ for archetype in archetypes:
 
                     # Extract numbers from output
                     grid_import_match = re.search(r"Grid import: (\d+\.?\d*)", result.stdout)
-                    total_load_match = re.search(r"Total load: (\d+\.?\d*)", result.stdout)
+                    total_cost_match = re.search(r"Total Cost: (\d+\.?\d*)", result.stdout)
                     
                     # Store results
                     results.append({
@@ -65,9 +65,9 @@ for archetype in archetypes:
                         "Operation": op,
                         "Solar": solar_key,
                         "Grid Import": float(grid_import_match.group(1)) if grid_import_match else None,
-                        "Total Load": float(total_load_match.group(1)) if total_load_match else None
+                        "Total Cost": float(total_cost_match.group(1)) if total_cost_match else None
                     })
 
 # Convert results to DataFrame and save to CSV
 df_results = pd.DataFrame(results)
-df_results.to_csv("simulation_results_2607_W+P+E+S.csv", index=False)
+df_results.to_csv("simulation_results_2607__opex2.csv", index=False)

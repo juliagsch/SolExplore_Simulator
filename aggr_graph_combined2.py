@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# This file creates the aggregated scenarios graph with uni and bidirectional scenarios all in the same file
 # Load data from CSV files
 uni_best = pd.read_csv('2507_e_uni_best_all_scenarios.csv')
 uni_worst = pd.read_csv('2507_e_uni_worst_all_scenarios.csv')
@@ -20,17 +19,29 @@ uni_worst = convert_to_megatonnes(uni_worst)
 bi_best = convert_to_megatonnes(bi_best)
 bi_worst = convert_to_megatonnes(bi_worst)
 
+# Custom color palette
+custom_colors = ['#C4DDFF', '#7FB5FF', '#79DAE8', '#73C5C5', '#9fc5e8', '#BDE2B9', '#80BCBD', '#AAD9BB', '#D5F0C1']
+highlight_color = '#79DAE8'  # Color that pops the most
+
+# Assign specific colors to scenarios
+custom_palette = {
+    'H+P': custom_colors[0],
+    'H+E+P': highlight_color,
+    'H+E': custom_colors[3],
+    'E+P': custom_colors[6],
+    'H+P+E+S': custom_colors[8]
+}
+
 # Function to plot the graph with simplified legend and adjusted x-axis
 def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
     plt.figure(figsize=(12, 6))  # Increase figure size for better clarity
     uni_scenarios = uni_best.columns[1:]  # Extract scenario names from uni_best
     bi_scenarios = bi_best.columns[1:]
-    palette = sns.color_palette("husl", len(set(uni_scenarios + bi_scenarios)))  # Define color palette
 
     combined_scenarios = list(set(uni_scenarios)) 
 
-    for i, scenario in enumerate(combined_scenarios):
-        color = palette[i]
+    for scenario in combined_scenarios:
+        color = custom_palette.get(scenario, 'grey')
         print(scenario + "----------------")
 
         if scenario == 'H+P':
@@ -57,9 +68,6 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                 if scenario == 'H+P+E+S':
                     label = 'H + P + E + S (Uni)'
 
-
-                
-
                 # Plot unidirectional best scenario lines
                 sns.lineplot(x='Conversion Rate (%)', y=scenario, data=uni_best, 
                              color=color, marker='o', linestyle='-')
@@ -72,7 +80,7 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                 max_emission_best = uni_best.loc[uni_best['Conversion Rate (%)'] == uni_best['Conversion Rate (%)'].max(), scenario].values[0]
                 plt.text(105, max_emission_best, label, color=color, ha='left', va='center')
 
-            if scenario in bi_scenarios:
+            if scenario in bi_scenarios and scenario != 'H+P+E+S':
                 label = scenario
                 if scenario == 'H+E+P':
                     label = 'H + E + P (Bi)'
@@ -80,8 +88,6 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                     label = 'H + E (Bi)'
                 if scenario == 'E+P':
                     label = 'E + P (Bi)'
-                if scenario == 'H+P+E+S':
-                    label = 'H + P + E + S (Bi)'
 
                 # Plot bidirectional best scenario lines
                 sns.lineplot(x='Conversion Rate (%)', y=scenario, data=bi_best, 
@@ -104,7 +110,5 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
     
     plt.show()
 
-
 # Plotting the graphs for unidirectional and bidirectional cases
 plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, 'Unidirectional vs Bidirectional Case: CO2 Emissions vs. Conversion Rate')
-
