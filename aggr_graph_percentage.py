@@ -2,22 +2,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load data from CSV files
-uni_best = pd.read_csv('2507_e_uni_best_all_scenarios.csv')
-uni_worst = pd.read_csv('2507_e_uni_worst_all_scenarios.csv')
-bi_best = pd.read_csv('2507_e_bi_best_all_scenarios.csv')
-bi_worst = pd.read_csv('2507_e_bi_worst_all_scenarios.csv')
-
-# Function to convert emission values from kilotonnes to megatonnes
-def convert_to_megatonnes(df):
-    df.iloc[:, 1:] = df.iloc[:, 1:] / 1000
-    return df
-
-# Convert all dataframes
-uni_best = convert_to_megatonnes(uni_best)
-uni_worst = convert_to_megatonnes(uni_worst)
-bi_best = convert_to_megatonnes(bi_best)
-bi_worst = convert_to_megatonnes(bi_worst)
+# Load data from percentage reduction CSV files
+uni_best_reduction = pd.read_csv('percentage_reduction_uni_best.csv')
+uni_worst_reduction = pd.read_csv('percentage_reduction_uni_worst.csv')
+bi_best_reduction = pd.read_csv('percentage_reduction_bi_best.csv')
+bi_worst_reduction = pd.read_csv('percentage_reduction_bi_worst.csv')
 
 # Custom color palette
 custom_colors = ['#88a1cf', '#ff8556', '#a4de52', '#f684c6', '#39c5a3', '#39c5a3']
@@ -42,10 +31,8 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
 
     for scenario in combined_scenarios:
         color = custom_palette.get(scenario, 'grey')
-        print(scenario + "----------------")
-
+        
         if scenario == 'H+P':
-            print("H+P")
             # Plot combined H+P scenario lines in a single color
             sns.lineplot(x='Conversion Rate (%)', y='H+P', data=uni_best, 
                          color=color, marker='o', linestyle='-')
@@ -54,8 +41,8 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
             plt.fill_between(x=uni_best['Conversion Rate (%)'], y1=uni_best['H+P'],
                              y2=uni_worst['H+P'], color=color, alpha=0.3)
             # Add combined label
-            max_emission_best = uni_best.loc[uni_best['Conversion Rate (%)'] == uni_best['Conversion Rate (%)'].max(), 'H+P'].values[0]
-            plt.text(105, max_emission_best, 'H + P', color=color, ha='left', va='center')
+            max_reduction_best = uni_best.loc[uni_best['Conversion Rate (%)'] == uni_best['Conversion Rate (%)'].max(), 'H+P'].values[0]
+            plt.text(105, max_reduction_best, 'H + P', color=color, ha='left', va='center', fontsize=14)
         else:
             if scenario in uni_scenarios:
                 label = scenario
@@ -77,8 +64,8 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                 plt.fill_between(x=uni_best['Conversion Rate (%)'], y1=uni_best[scenario],
                                  y2=uni_worst[scenario], color=color, alpha=0.3)
                 # Adding scenario labels to the right of the lines
-                max_emission_best = uni_best.loc[uni_best['Conversion Rate (%)'] == uni_best['Conversion Rate (%)'].max(), scenario].values[0]
-                plt.text(105, max_emission_best, label, color=color, ha='left', va='center')
+                max_reduction_best = uni_best.loc[uni_best['Conversion Rate (%)'] == uni_best['Conversion Rate (%)'].max(), scenario].values[0]
+                plt.text(105, max_reduction_best, label, color=color, ha='left', va='center', fontsize=12)
 
             if scenario in bi_scenarios and scenario != 'H+P+E+S':
                 label = scenario
@@ -98,17 +85,17 @@ def plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, title):
                 plt.fill_between(x=bi_best['Conversion Rate (%)'], y1=bi_best[scenario],
                                  y2=bi_worst[scenario], color=color, alpha=0.3)
                 # Adding scenario labels to the right of the lines
-                max_emission_best = bi_best.loc[bi_best['Conversion Rate (%)'] == bi_best['Conversion Rate (%)'].max(), scenario].values[0]
-                plt.text(105, max_emission_best, label, color=color, ha='left', va='center')
+                max_reduction_best = bi_best.loc[bi_best['Conversion Rate (%)'] == bi_best['Conversion Rate (%)'].max(), scenario].values[0]
+                plt.text(105, max_reduction_best, label, color=color, ha='left', va='center', fontsize=12)
 
-    #plt.title(title)
-    plt.xlabel('Conversion Rate (%)')
-    plt.ylabel('Total CO2 Emissions (Megatonnes)')
-    plt.xlim([0, 125])  # Extend x-axis to 125 to fit labels
-    plt.ylim([6, 20])  # Adjust according to your data range (6 to 20 megatonnes)
-    plt.xticks(range(0, 101, 10))  # Ensure ticks are only up to 100
-    
+    plt.xlabel('Conversion Rate (%)', fontsize=16)  # x-axis label with font size 16
+    plt.ylabel('Reduction in CO2 Emissions (%)', fontsize=16)  # y-axis label with font size 16
+    plt.xlim([0, 135])  # Extend x-axis to 125 to fit labels
+    plt.ylim([80, 0])  # Set y-axis from 100 to 0 to reverse it
+    plt.xticks(range(0, 101, 10), fontsize=14)  # Ensure ticks are only up to 100 with font size 14
+    plt.yticks(range(0, 80, 10), [f'-{y}' for y in range(0, 80, 10)], fontsize=14)  # Set y-ticks as negative values
+
     plt.show()
 
 # Plotting the graphs for unidirectional and bidirectional cases
-plot_combined_graph(uni_best, uni_worst, bi_best, bi_worst, 'Unidirectional vs Bidirectional Case: CO2 Emissions vs. Conversion Rate')
+plot_combined_graph(uni_best_reduction, uni_worst_reduction, bi_best_reduction, bi_worst_reduction, 'Unidirectional vs Bidirectional Case: Percentage Reduction in CO2 Emissions')

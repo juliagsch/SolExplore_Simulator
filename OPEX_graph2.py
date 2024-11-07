@@ -3,9 +3,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Load the data from the CSV file
-#file_path = 'averaged_simulation_results.csv'  # Adjust this path if necessary
-file_path = '2607_averaged_simulation_results_2607__opex2.csv'
+# Load the data from the CSV file, normal tariff
+file_path = 'averaged_simulation_results.csv'  # Adjust this path if necessary
+# below is the file path to data with LBN tariff 
+#file_path_LBN = '2607_averaged_simulation_results_2607__opex2.csv'
 
 data = pd.read_csv(file_path)
 

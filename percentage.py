@@ -15,19 +15,17 @@ def calculate_percentage_reduction(df, baseline):
     percentage_reduction.iloc[:, 1:] = (baseline - df.iloc[:, 1:]) / baseline * 100
     return percentage_reduction
 
-# Calculate percentage reductions
+# Calculate percentage reductions and save each to a separate CSV file
 uni_best_reduction = calculate_percentage_reduction(uni_best, baseline_emission)
+uni_best_reduction.to_csv('percentage_reduction_uni_best.csv', index=False)
+
 uni_worst_reduction = calculate_percentage_reduction(uni_worst, baseline_emission)
+uni_worst_reduction.to_csv('percentage_reduction_uni_worst.csv', index=False)
+
 bi_best_reduction = calculate_percentage_reduction(bi_best, baseline_emission)
+bi_best_reduction.to_csv('percentage_reduction_bi_best.csv', index=False)
+
 bi_worst_reduction = calculate_percentage_reduction(bi_worst, baseline_emission)
+bi_worst_reduction.to_csv('percentage_reduction_bi_worst.csv', index=False)
 
-# Select relevant columns and rename them for the output
-output_df = pd.DataFrame()
-output_df['Conversion Rate (%)'] = uni_best_reduction['Conversion Rate (%)']
-output_df['H+E+P uni'] = uni_best_reduction['H+E+P']
-output_df['H+E+P bi'] = bi_best_reduction['H+E+P']
-
-# Save the output to a CSV file
-output_df.to_csv('percentage_reduction_emissions.csv', index=False)
-
-print("Output saved to 'percentage_reduction_emissions.csv'")
+print("Percentage reduction files saved for uni_best, uni_worst, bi_best, and bi_worst.")
