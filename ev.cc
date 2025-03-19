@@ -145,7 +145,7 @@ int convertTimeToHour(const std::string &timeStr)
     }
     catch (const std::exception &e)
     {
-      //  std::cerr << "Error converting time to hour: " << e.what() << std::endl;
+        //  std::cerr << "Error converting time to hour: " << e.what() << std::endl;
         return -1; // Return a default value or handle the error as appropriate
     }
 }
@@ -222,7 +222,7 @@ std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecord
     for (int hour = 0; hour < 24; ++hour)
     {
         // Set the day number, day name, and hour for each EVStatus object
-        
+
         hourlyStatuses[hour].hour = hour;
         // Use the SOC value from the previous hour
         hourlyStatuses[hour].currentSOC = previousSOC;

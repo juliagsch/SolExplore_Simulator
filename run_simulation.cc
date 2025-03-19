@@ -14,19 +14,19 @@
 
 using namespace std;
 
-
 // chunk_size: length of time (in days)
-void run_simulations(vector<double> &load, vector<double> &solar, int metric, int chunk_size, int number_of_chunks, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc) {
+void run_simulations(vector<double> &load, vector<double> &solar, int metric, int chunk_size, int number_of_chunks, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc)
+{
 
 	// set random seed to a specific value if you want consistency in results
 	srand(10);
 
 	// get number of timeslots in each chunk
-	//zb 100 days a 24h if we have hourly data in the input files 
-	int t_chunk_size = chunk_size*(24/T_u);
+	// zb 100 days a 24h if we have hourly data in the input files
+	int t_chunk_size = chunk_size * (24 / T_u);
 	cout << "t_chunk_size = " << t_chunk_size << endl;
 
-	vector <vector<SimulationResult> > results;
+	vector<vector<SimulationResult>> results;
 	int Ev_start = rand() % evRecords.size();
 	// to start on a Monday
 	Ev_start = 0;
@@ -35,16 +35,15 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 	pv_result = 4;
 
 	sim(load, solar, 0, t_chunk_size, battery_result, pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+}
 
-	}
-
-
-
-int main(int argc, char ** argv) {
+int main(int argc, char **argv)
+{
 	int input_process_status = process_input(argv, true);
 
 	// Handle input processing error if needed
-	if (input_process_status != 0){
+	if (input_process_status != 0)
+	{
 		std::cerr << "Error processing input" << std::endl;
 		return 1; // Or handle the error as appropriate
 	}
@@ -53,11 +52,12 @@ int main(int argc, char ** argv) {
 	std::vector<EVRecord> evRecords = readEVData(path_to_ev_data);
 
 	// Check if EV data was read successfully
-	if (evRecords.empty()){
+	if (evRecords.empty())
+	{
 		std::cerr << "Error reading EV data or no records found" << std::endl;
 		return 1; // Or handle the error as appropriate
 	}
-	
+
 	// Initialize EVStatus
 	EVStatus evStatus;
 	// Generate all daily statuses
@@ -66,7 +66,7 @@ int main(int argc, char ** argv) {
 	run_simulations(load, solar, metric, days_in_chunk, number_of_chunks, evRecords, allDailyStatuses, max_soc, min_soc);
 	cout << "Grid import: " << grid_import << endl;
 	cout << "Total Cost: " << total_cost << endl;
-	//cout << "Total Hours: " << total_hours << endl;
-	//cout << "Total load: " << total_load << endl;
+	// cout << "Total Hours: " << total_hours << endl;
+	// cout << "Total load: " << total_load << endl;
 	return 0;
 }

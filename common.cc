@@ -10,7 +10,7 @@
 
 #include "common.h"
 
-double B_inv; // cost per cell
+double B_inv;  // cost per cell
 double PV_inv; // cost per unit (kW) of PV
 
 double cells_min;
@@ -23,7 +23,7 @@ double battery_result;
 double pv_result;
 int loadNumber;
 
-    double max_soc;
+double max_soc;
 double min_soc;
 
 double ev_battery_capacity = 40.0;
@@ -42,7 +42,7 @@ double total_hours = 0.0;
 // common.cc
 std::string EV_charging = "naive";               // Default policy
 std::string Operation_policy = "unidirectional"; // Default policy
-std:: string path_to_ev_data ;
+std::string path_to_ev_data;
 
 double epsilon;
 double confidence;
@@ -79,8 +79,6 @@ std::string extract_wfh_type(const std::string &ev_filename)
     }
 }
 
-
-
 /*int extractLoadNumber(const std::string &filename)
 {
     // Find the position of "load_"
@@ -110,34 +108,37 @@ std::string extract_wfh_type(const std::string &ev_filename)
 
 */
 
+vector<double> read_data_from_file(istream &datafile, int limit = INT_MAX)
+{
 
-vector<double> read_data_from_file(istream &datafile, int limit = INT_MAX) {
+    vector<double> data;
 
-    vector <double> data;
-
-	if (datafile.fail()) {
-    	data.push_back(-1);
-    	cerr << errno << ": read data file failed." << endl;
-    	return data;
-  	}
+    if (datafile.fail())
+    {
+        data.push_back(-1);
+        cerr << errno << ": read data file failed." << endl;
+        return data;
+    }
 
     // read data file into vector
     string line;
     double value;
 
-    for (int i = 0; i < limit && getline(datafile, line); ++i) {
-    	istringstream iss(line);
-    	iss >> value;
-    	data.push_back(value);
+    for (int i = 0; i < limit && getline(datafile, line); ++i)
+    {
+        istringstream iss(line);
+        iss >> value;
+        data.push_back(value);
     }
 
     return data;
 }
 
-int process_input(char** argv, bool process_metric_input) {
-    
+int process_input(char **argv, bool process_metric_input)
+{
+
     int i = 0;
-    
+
     string inv_PV_string = argv[++i];
     PV_inv = stod(inv_PV_string);
 
@@ -147,10 +148,10 @@ int process_input(char** argv, bool process_metric_input) {
 #endif
 
     string inv_B_string = argv[++i];
-    B_inv = stod(inv_B_string)*kWh_in_one_cell; // convert from per-kWh to per-cell cost
+    B_inv = stod(inv_B_string) * kWh_in_one_cell; // convert from per-kWh to per-cell cost
 
 #ifdef DEBUG
-    cout << "inv_B_string = " << inv_B_string 
+    cout << "inv_B_string = " << inv_B_string
          << ", B_inv = " << B_inv << endl;
 #endif
 
@@ -184,13 +185,14 @@ int process_input(char** argv, bool process_metric_input) {
          << endl;
 #endif
 
-    if (process_metric_input) {
+    if (process_metric_input)
+    {
         string metric_string = argv[++i];
         metric = stoi(metric_string);
 
 #ifdef DEBUG
         cout << "metric_string = " << metric_string
-            << ", metric = " << metric << endl;
+             << ", metric = " << metric << endl;
 #endif
     }
 
@@ -224,7 +226,8 @@ int process_input(char** argv, bool process_metric_input) {
     cout << "loadfile = " << loadfile << endl;
 #endif
 
-    if (loadfile == string("--")) {
+    if (loadfile == string("--"))
+    {
         // read from cin
         int limit = stoi(argv[++i]);
 
@@ -233,7 +236,9 @@ int process_input(char** argv, bool process_metric_input) {
 #endif
 
         load = read_data_from_file(cin, limit);
-    } else {
+    }
+    else
+    {
 
 #ifdef DEBUG
         cout << "reading load file" << endl;
@@ -243,16 +248,17 @@ int process_input(char** argv, bool process_metric_input) {
         ifstream loadstream(loadfile.c_str());
         load = read_data_from_file(loadstream);
     }
-     //loadNumber = extractLoadNumber(loadfile);
+    // loadNumber = extractLoadNumber(loadfile);
 
 #ifdef DEBUG
-	cout << "checking for errors in load file..." << endl;
+    cout << "checking for errors in load file..." << endl;
 #endif
 
-	if (load[0] < 0) {
-		cerr << "error reading load file " << loadfile << endl;
-		return 1;
-	}
+    if (load[0] < 0)
+    {
+        cerr << "error reading load file " << loadfile << endl;
+        return 1;
+    }
 
     string solarfile = argv[++i];
 
@@ -260,7 +266,8 @@ int process_input(char** argv, bool process_metric_input) {
     cout << "solarfile = " << solarfile << endl;
 #endif
 
-    if (solarfile == string("--")) {
+    if (solarfile == string("--"))
+    {
 
 #ifdef DEBUG
         cout << "reading solar file" << endl;
@@ -274,20 +281,23 @@ int process_input(char** argv, bool process_metric_input) {
 #endif
 
         solar = read_data_from_file(cin, limit);
-    } else {
+    }
+    else
+    {
         // read in data into vector
         ifstream solarstream(solarfile.c_str());
         solar = read_data_from_file(solarstream);
     }
 
 #ifdef DEBUG
-	cout << "checking for errors in solar file..." << endl;
+    cout << "checking for errors in solar file..." << endl;
 #endif
 
-	if (solar[0] < 0) {
-		cerr << "error reading solar file " << solarfile << endl;
-		return 1;
-	}
+    if (solar[0] < 0)
+    {
+        cerr << "error reading solar file " << solarfile << endl;
+        return 1;
+    }
 
     string max_soc_string = argv[++i];
     max_soc = stod(max_soc_string);
@@ -308,7 +318,7 @@ int process_input(char** argv, bool process_metric_input) {
 #ifdef DEBUG
     cout << "ev_battery_capacity_string = " << ev_battery_capacity_string << ", ev_battery_capacity = " << ev_battery_capacity << endl;
 #endif
-  
+
     string charging_rate_string = argv[++i];
     charging_rate = stod(charging_rate_string);
 
@@ -318,24 +328,21 @@ int process_input(char** argv, bool process_metric_input) {
 
     std::set<std::string> validOperationPolicyOptions = {"optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional", "hybrid_bidirectional", "no_ev"};
 
-       
-    std::string operationPolicyInput = argv[++i]; 
-
-    
+    std::string operationPolicyInput = argv[++i];
 
     if (validOperationPolicyOptions.find(operationPolicyInput) == validOperationPolicyOptions.end())
     {
         std::cerr << "Invalid Operation policy: " << operationPolicyInput << std::endl;
-        exit(EXIT_FAILURE); 
+        exit(EXIT_FAILURE);
     }
 
     Operation_policy = operationPolicyInput;
 
     string path_to_ev_data_string = argv[++i];
     path_to_ev_data = path_to_ev_data_string;
-   // cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
+    // cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
     wfh_type = extract_wfh_type(path_to_ev_data);
-    //cout << "wfh_type = " << wfh_type << endl;
+    // cout << "wfh_type = " << wfh_type << endl;
 
     std::string battery_result_string = argv[++i];
     battery_result = stod(battery_result_string);

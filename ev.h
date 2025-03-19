@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-
 struct EVRecord
 {
     int day;
@@ -16,11 +15,10 @@ struct EVRecord
     double socOnArrival;
     double distanceKm;
     int travelTimeMin;
-    std::string nextDepartureTime; 
+    std::string nextDepartureTime;
 };
 
 extern std::vector<EVRecord> evRecords;
-
 
 struct EVStatus
 {
