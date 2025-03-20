@@ -95,20 +95,13 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 	}
 
 	double diff = ev_battery_capacity * max_soc - ev_b;
-	int hours_needed = ceil(diff / charging_rate);
+	int hours_needed = ceil(diff / (charging_rate * eta_c_ev * T_u));
 	if (hours_needed == 0)
 	{
 		return -1; // EV is already charged
 	}
 	// Compute the latest start time for charging, taking modulo 24 to wrap around midnight
-
-	// TODO: Can be solved in a nicer way, possibly only discharging until a threshold one hour before charching starts instead of not discharging at all.
-
-	// In the bidirectional case, we need to subtract one hour as we would otherwise discharge in that timestep
-	// Which might cause us to miss the expected battery level at departure.
-	int latest_t = (next_dept + 24 - hours_needed - 1) % 24;
-	// If latest_t is already in the past, we set it to the current hour.
-	latest_t = latest_t != (currentHour - 1) ? latest_t : currentHour;
+	int latest_t = (next_dept + 24 - hours_needed) % 24;
 
 	return latest_t;
 }
@@ -261,7 +254,6 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	int trace_days = min(trace_length_load / 24, trace_length_solar / 24);
 	int load_s_Start_day = rand() % trace_days;
 	start_index = load_s_Start_day * 24;
-	bool z = false;
 
 	for (int day = 0; day < number_of_chunks; day++)
 	{
@@ -271,6 +263,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		for (int hour = 0; hour < 24; hour++)
 		{
 			total_hours = total_hours + 1;
+			bool z = false;
 			int t = day * 24 + start_index + hour;
 			index_t_solar = t % trace_length_solar;
 			index_t_load = t % trace_length_load;
@@ -341,17 +334,15 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			{
 				int chargingHour = lastp(allDailyStatuses[ev_day], ev_b, hour);
 				double maxCharging = 0.0;
-				// The EV is charged from chargingHour until the time of departure.
-				// Once the EV leaves the house, z needs to be set to false as it cannot be charged anymore.
-				// z is switched back to true when the car is home and the charging period starts.
-				if (!is_home)
-				{
-					z = false;
-				}
-				else if (chargingHour == hour || z)
+
+				if (chargingHour == hour)
 				{
 					z = true;
 					maxCharging = get_maxCharging(ev_b);
+				}
+				else
+				{
+					z = false;
 				}
 				// maxCharging = 0.0;
 				// z = false;
