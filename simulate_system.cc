@@ -101,7 +101,13 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 		return -1; // EV is already charged
 	}
 	// Compute the latest start time for charging, taking modulo 24 to wrap around midnight
-	int latest_t = (next_dept + 24 - hours_needed) % 24;
+	// TODO: Can be solved in a nicer way, possibly only discharging until a threshold one hour before charching starts instead of not discharging at all.
+
+	// In the bidirectional case, we need to subtract one hour as we would otherwise discharge in that timestep
+	// Which might cause us to miss the expected battery level at departure.
+	int latest_t = (next_dept + 24 - hours_needed - 1) % 24;
+	// If latest_t is already in the past, we set it to the current hour.
+	latest_t = latest_t != (currentHour - 1) % 24 ? latest_t : currentHour;
 
 	return latest_t;
 }
@@ -152,7 +158,7 @@ std::pair<double, double> maximise_solar_charging(double b, double ev_b, double 
 	}
 	if (c > 0 && is_home == true && z == false)
 	{
-		double max_c_ev = calc_max_charging_ev(c, ev_b);
+		double max_c_ev = calc_max_charging_ev(fmin(c, charging_rate * T_u), ev_b);
 		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
 		ev_charged += max_c_ev;
 		if (max_c_ev > 0)
