@@ -51,6 +51,8 @@ double calc_max_charging_ev(double power, double ev_b)
 	double step = power / 30.0;
 	double upper_lim = max_soc * ev_battery_capacity;
 	double ev_b_m = 0.0;
+	// TODO: We never quite reach the upper limit charge of the battery which we assume the car has at departure.
+	// This results in a tiny error.
 	for (double c = power; c > 0; c -= step)
 	{
 		ev_b_m = ev_b + c * eta_c_ev * T_u;
@@ -95,18 +97,21 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 	}
 
 	double diff = ev_battery_capacity * max_soc - ev_b;
+	// diff needs to be divided by (charging_rate * eta_c_ev * T_u) not just charging_rate. Otherwise we expect the car to be charged by more than it actually is.
+	// This caused us to miss the target battery level at departure. In some cases, this also causes the charging start to be in the past after some charging hours
+	// which leads to the EV to stop charging resulting in a large error.
 	int hours_needed = ceil(diff / (charging_rate * eta_c_ev * T_u));
 	if (hours_needed == 0)
 	{
 		return -1; // EV is already charged
 	}
 	// Compute the latest start time for charging, taking modulo 24 to wrap around midnight
-	// TODO: Can be solved in a nicer way, possibly only discharging until a threshold one hour before charching starts instead of not discharging at all.
+	// TODO: Can be solved in a nicer way, possibly only discharging until a threshold one hour before charging starts instead of not discharging at all.
 
 	// In the bidirectional case, we need to subtract one hour as we would otherwise discharge in that timestep
 	// Which might cause us to miss the expected battery level at departure.
 	int latest_t = (next_dept + 24 - hours_needed - 1) % 24;
-	// If latest_t is already in the past, we set it to the current hour.
+	// If latest_t is already in the past due to subtracting one before, we set it to the current hour.
 	latest_t = latest_t != (currentHour - 1) % 24 ? latest_t : currentHour;
 
 	return latest_t;
@@ -145,7 +150,7 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 
 std::pair<double, double> maximise_solar_charging(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, bool is_home, int hour)
 {
-	// charge EV whenever there is sun available after laod has been covered
+	// charge EV whenever there is sun available after load has been covered
 
 	if (z == true)
 	{
@@ -212,7 +217,9 @@ double get_maxCharging(double ev_b)
 double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 {
 	double ev_b = 0.0;
-
+	// TODO: Can be made more robust by subtracting the used battery of a trip from the battery level at departure.
+	// Currently we assume that the battery is fully charged at departure which works for the EV traces used. However, if an EV is only home for
+	// a short time, it might not be fully charged at departure.
 	if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome && hour != 0)
 	{
 		ev_b = dailyStatuses[hour].currentSOC;
@@ -341,6 +348,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 				int chargingHour = lastp(allDailyStatuses[ev_day], ev_b, hour);
 				double maxCharging = 0.0;
 
+				// TODO: Can be rewritten in a more robust way to ensure that the EV is charging also when the chargingHour is in the past.
+				// For instance if the car is only home for 2 hours and has a very low battery level, the charging Hour would be in the past by multiple hours
+				// and we wouldn't charge at all.
 				if (chargingHour == hour)
 				{
 					z = true;
@@ -361,11 +371,14 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 				d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
 				// we assume we have no battery here
 				//!! modify the battery size to be 0
+				// TODO: Is it correct to assume that we have no battery here? Load can also be covered from the battery in maximize_solar_charging
+				// and therefore it shouldn't add to the total_cost. Same question for unidirectional case.
 				double after_load = load_trace[index_t_load] - solar_trace[index_t_solar] * pv;
 				if (after_load < 0)
 				{
 					// only need the grid to charge the EV at this hour
 					double rest_ev = maxCharging + after_load;
+					// TODO: What if rest_ev is negative? Do we feed back to the grid and therefore the total_cost is decreased? Same in unidirectional case.
 					total_cost = total_cost + rest_ev * 0.07;
 				}
 				else if (after_load > 0)
@@ -376,6 +389,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 						double max_d_ev = fmin(calc_max_discharging_ev(after_load, ev_b, min_soc, ev_battery_capacity), charging_rate);
 						after_load -= -max_d_ev;
 						// The electricity discharged from the EV needs to be excluded from the total load as it has already been included when the EV was charged.
+						// Example: If we never drive, the total load should be equal to the load trace. However, if we cover the load using the EV battery, the total load
+						// is equal to load_trace + max_d_ev. Therefore we need to subtract it here.
 						total_load -= max_d_ev;
 					}
 					if (after_load > 0)
