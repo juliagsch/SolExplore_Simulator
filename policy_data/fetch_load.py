@@ -1,5 +1,5 @@
 # This file contains the code used to fetch the faraday raw data. We iterate through all of the days of the year and 
-# save the load trace for a given population on a given day. The daily load traces are saved in ./policy_data/faraday_raw. Using the file ./policy_data/prepare_inputs.py, the data can be aggregated
+# save the load trace for a given population on a given day. The daily load traces are saved in ./policy_data/faraday_raw. Using the file ./policy_data/process_load.py, the data can be aggregated
 # to create a yearly load trace for each household in the population. While the daily traces in faraday_raw contain 700 households living in any housing type, 
 # we only use the 300 households living in terraced, detached or semi-detached houses. The remaining 700 households were fetched for a different project
 # and can be ignored.
@@ -7,7 +7,6 @@
 
 import requests
 import os
-import numpy as np
 import json
 
 FARADAY_KEY = os.getenv("FARADAY_KEY")
@@ -146,6 +145,7 @@ for month_idx, total_month_days in enumerate(days_per_month):
     month_day = 0
     while month_day<total_month_days:
         print(f"Fetching profiles for {days[day_idx]} in {months[month_idx]}. Current day of the year: {count}")
+
         payload = get_payload(days[day_idx], months[month_idx])
         response = requests.post(url, json=payload, headers=headers)
         if response.status_code == 200:

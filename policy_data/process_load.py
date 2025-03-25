@@ -6,7 +6,6 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import random
 import shutil
 
 def process_responses(input_file):
