@@ -31,7 +31,7 @@ def read_and_process_monthly(file_path):
     start_idx = 0
     for days in days_in_month:
         end_idx = start_idx + days
-        monthly_averages.append(np.sum(data[start_idx * 24:end_idx * 24]))  # Average over the month
+        monthly_averages.append(np.sum(data[start_idx * 24:end_idx * 24])/days)  # Average over the month
         start_idx = end_idx  # Move to the next month
     
     return total_pv_generation, monthly_averages
@@ -62,7 +62,7 @@ def analyze_and_plot_monthly(solar_files):
     
     plt.title('Average Monthly PV Production')
     plt.xlabel('Month of the Year')
-    plt.ylabel('Average Production (kWh)')
+    plt.ylabel('Average Production per Day (kWh)')
     plt.xticks(range(12), labels=[f'{month}' for month in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]], rotation=45)
     plt.grid(True)
     plt.legend()
