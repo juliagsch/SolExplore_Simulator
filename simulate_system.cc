@@ -11,6 +11,7 @@ using namespace std;
 int loss_events = 0;
 double load_deficit = 0;
 double load_sum = 0;
+double ev_power_used = 0;
 
 double calc_max_charging(double power, double b_prev)
 {
@@ -51,8 +52,7 @@ double calc_max_charging_ev(double power, double ev_b)
 	double step = power / 30.0;
 	double upper_lim = max_soc * ev_battery_capacity;
 	double ev_b_m = 0.0;
-	// TODO: We never quite reach the upper limit charge of the battery which we assume the car has at departure.
-	// This results in a tiny error.
+
 	for (double c = power; c > 0; c -= step)
 	{
 		ev_b_m = ev_b + c * eta_c_ev * T_u;
@@ -83,7 +83,8 @@ double calc_max_discharging_ev(double power, double ev_b, double min_soc, double
 	return 0;
 }
 
-int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour)
+// Returns true if the EV should currently be charging, false otherwise
+bool get_is_charging(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHour)
 {
 	// Find the next departure hour
 	int next_dept = -1;
@@ -93,33 +94,27 @@ int lastp(const std::vector<EVStatus> &dailyStatuses, double ev_b, int currentHo
 	}
 	if (next_dept == -1)
 	{
-		return -1;
+		return false;
 	}
 
+	// Compute how many hours are needed to reach the max SOC.
 	double diff = ev_battery_capacity * max_soc - ev_b;
-	// diff needs to be divided by (charging_rate * eta_c_ev * T_u) not just charging_rate. Otherwise we expect the car to be charged by more than it actually is.
-	// This caused us to miss the target battery level at departure. In some cases, this also causes the charging start to be in the past after some charging hours
-	// which leads to the EV to stop charging resulting in a large error.
 	int hours_needed = ceil(diff / (charging_rate * eta_c_ev * T_u));
-	if (hours_needed == 0)
+
+	// Find the number of hours until departure.
+	int hours_until_dept = (24 + next_dept - currentHour) % 24;
+
+	// TODO: It is possible that we don't quite reach the full battery level if we discharge in the hour before charging starts.
+	if (hours_needed >= hours_until_dept)
 	{
-		return -1; // EV is already charged
+		return true;
 	}
-	// Compute the latest start time for charging, taking modulo 24 to wrap around midnight
-	// TODO: Can be solved in a nicer way, possibly only discharging until a threshold one hour before charging starts instead of not discharging at all.
-
-	// In the bidirectional case, we need to subtract one hour as we would otherwise discharge in that timestep
-	// Which might cause us to miss the expected battery level at departure.
-	int latest_t = (next_dept + 24 - hours_needed - 1) % 24;
-	// If latest_t is already in the past due to subtracting one before, we set it to the current hour.
-	latest_t = latest_t != (currentHour - 1) % 24 ? latest_t : currentHour;
-
-	return latest_t;
+	return false;
 }
 
-std::pair<double, double> unidirectional_static(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, double is_home, int hour)
+std::pair<double, double> safe_unidirectional(double b, double ev_b, double c, double d, bool isCharging, double maxCharging, double isHome, int hour)
 {
-	if (z == true)
+	if (isCharging == true)
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 		ev_charged += maxCharging;
@@ -128,81 +123,120 @@ std::pair<double, double> unidirectional_static(double b, double ev_b, double c,
 		event.chargingAmount = maxCharging;
 		chargingEvents.push_back(event);
 	}
+
+	// There is leftover solar power after covering household and expected EV load
 	if (c > 0)
 	{
+		double max_c = fmin(calc_max_charging(c, b), alpha_c);
 		b = b + max_c * eta_c * T_u;
 		stat_charged += max_c;
 	}
-	if (d > 0)
+
+	// Electricity is missing to cover household and expected EV load
+	else if (d > 0)
 	{
+		double max_d = fmin(calc_max_discharging(d, b), alpha_d);
 		b = b - max_d * eta_d * T_u;
 		stat_discharged += max_d;
-		if (max_d < d)
+		double res = d - max_d;
+		if (res > 0)
 		{
 			loss_events += 1;
-			load_deficit += (d - max_d);
-			grid_import += (d - max_d);
+			load_deficit += res;
+			grid_import += res;
+
+			if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4)
+			{
+				// special grid tariff for home load
+				total_cost += res * 0.07;
+			}
+			else
+			{
+				total_cost += fmin(maxCharging, res) * 0.07;
+				res -= fmin(maxCharging, res);
+				total_cost += res * 0.35;
+			}
 		}
 	}
 
 	return std::make_pair(ev_b, b);
 }
 
-std::pair<double, double> maximise_solar_charging(double b, double ev_b, double c, double d, bool z, double max_c, double max_d, double maxCharging, bool is_home, int hour)
+std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, double d, bool isCharging, double maxCharging, bool isHome, int hour)
 {
-	// charge EV whenever there is sun available after load has been covered
-
-	if (z == true)
+	if (isCharging == true)
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
-		ev_charged += maxCharging;
+		ev_charged += maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 		ChargingEvent event;
 		event.hour = hour;
-		event.chargingAmount = maxCharging;
+		event.chargingAmount = maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 		chargingEvents.push_back(event);
 	}
-	if (c > 0 && is_home == true && z == false)
+
+	// There is leftover solar power after covering household and expected EV load
+	if (c > 0)
 	{
-		double max_c_ev = calc_max_charging_ev(fmin(c, charging_rate * T_u), ev_b);
-		ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
-		ev_charged += max_c_ev;
-		if (max_c_ev > 0)
+		// First we use the remaining the power the EV if if is home and if it hasn't been powered already.
+		if (isHome == true && isCharging == false)
 		{
-			ChargingEvent event;
-			event.hour = hour;
-			event.chargingAmount = max_c_ev;
-			chargingEvents.push_back(event);
+			double max_c_ev = calc_max_charging_ev(fmin(c, charging_rate), ev_b);
+			ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+			ev_charged += max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
+			if (max_c_ev > 0)
+			{
+				ChargingEvent event;
+				event.hour = hour;
+				event.chargingAmount = max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
+				chargingEvents.push_back(event);
+			}
+			c -= max_c_ev;
 		}
-		double res = c - max_c_ev;
-		if (res > 0)
+		// If there is still electricity remaining, we charge the stationary battery.
+		if (c > 0)
 		{
-			max_c = fmin(calc_max_charging(res, b), alpha_c);
+			double max_c = fmin(calc_max_charging(c, b), alpha_c);
 			b = b + max_c * eta_c * T_u;
-			stat_charged += max_c;
+			stat_charged += max_c; // TODO: Depending on use case this should be max_c * eta_c * T_u
 		}
 	}
-	else if (c > 0 && is_home == false || c > 0 && z == true)
+
+	// Electricity is missing to cover household and expected EV load
+	else if (d > 0)
 	{
-		b = b + max_c * eta_c * T_u;
-		stat_charged += max_c;
-	}
-	if (d > 0)
-	{
+		double max_d = fmin(calc_max_discharging(d, b), alpha_d);
 		b = b - max_d * eta_d * T_u;
 		stat_discharged += max_d;
 		double res = d - max_d;
-		if (res > 0 && z == false && is_home == true)
+
+		if (res > 0 && isCharging == false && isHome == true)
 		{
-			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), charging_rate);
-			ev_b = ev_b - max_d_ev * eta_c_ev * T_u;
-			ev_discharged += max_d_ev;
+			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), discharging_rate / (eta_d_ev * T_u));
+			ev_b = ev_b - max_d_ev * eta_d_ev * T_u;
+			ev_discharged += max_d_ev; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 			res = res - max_d_ev;
+
+			// The electricity discharged from the EV needs to be excluded from the total load as it has already been included when the EV was charged.
+			total_load -= max_d_ev;
 		}
+
+		// We need to import from grid if there is still electricity missing
 		if (res > 0)
 		{
 			loss_events += 1;
 			load_deficit += res;
 			grid_import += res;
+			if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4)
+			{
+				// special grid tariff for home load
+				total_cost += res * 0.07;
+			}
+			else
+			{
+				total_cost += fmin(maxCharging, res) * 0.07;
+				res -= fmin(maxCharging, res);
+				total_cost += res * 0.35;
+			}
 		}
 	}
 	return std::make_pair(ev_b, b);
@@ -216,17 +250,12 @@ double get_maxCharging(double ev_b)
 
 double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 {
-	double ev_b = 0.0;
-	// TODO: Can be made more robust by subtracting the used battery of a trip from the battery level at departure.
-	// Currently we assume that the battery is fully charged at departure which works for the EV traces used. However, if an EV is only home for
-	// a short time, it might not be fully charged at departure.
-	if (!dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome && hour != 0)
+	double ev_b = last_soc;
+	if (hour != 0 && !dailyStatuses[hour - 1].isAtHome && dailyStatuses[hour].isAtHome)
 	{
-		ev_b = dailyStatuses[hour].currentSOC;
-	}
-	else
-	{
-		ev_b = last_soc;
+		ev_b -= dailyStatuses[hour - 1].powerUsed;
+		ev_power_used += dailyStatuses[hour - 1].powerUsed;
+		std::cout << "car arrived back home, power used: " << dailyStatuses[hour - 1].powerUsed << " last soc: " << last_soc << " new ev: " << ev_b << std::endl;
 	}
 
 	return ev_b;
@@ -235,210 +264,99 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 // call it with a specific battery and PV size and want to compute the loss
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
 {
-	// cells is the max battery size
-	double b = 0.0;
-	// start each simulation with a fully charged battery
 	loss_events = 0;
 	load_deficit = 0;
 	grid_import = 0;
 	load_sum = 0;
 	total_load = 0;
+	total_cost = 0;
+
+	double b = 0.0;			// Start simulation with an empty stationary battery
+	double c = 0.0;			// Remaining solar energy after covering household and EV charging load
+	double d = 0.0;			// Missing energy to cover household and EV charging load after using produced solar energy.
+	double last_soc = 32.0; // EV battery level during the previous time step
+
+	int index_t_solar; // Current index in solar trace
+	int index_t_load;  // Current index in load trace
 
 	int trace_length_solar = solar_trace.size();
 	int trace_length_load = load_trace.size();
 
-	double c = 0.0;
-	double d = 0.0;
-	double c2 = 0.0;
-	double d2 = 0.0;
-	double max_c = 0.0;
-	double max_d = 0.0;
-	double max_c2 = 0.0;
-	double max_d2 = 0.0;
-	double max_c_ev = 0.0;
-	double max_d_ev = 0.0;
-	int index_t_solar;
-	int index_t_load;
-	double last_soc = 32.0;
-	int day = 0;
-	int hour = 0;
-	bool charged_last_hour = false;
-
+	// Get start day of the simulation
 	int trace_days = min(trace_length_load / 24, trace_length_solar / 24);
 	int load_s_Start_day = rand() % trace_days;
 	start_index = load_s_Start_day * 24;
 
-	for (int day = 0; day < number_of_chunks; day++)
+	for (int day = 0; day < days_in_chunk; day++)
 	{
 		int ev_day = day + Ev_start;
 		ev_day = ev_day % 365;
 
 		for (int hour = 0; hour < 24; hour++)
 		{
-			total_hours = total_hours + 1;
-			bool z = false;
+			total_hours += 1;
 			int t = day * 24 + start_index + hour;
 			index_t_solar = t % trace_length_solar;
 			index_t_load = t % trace_length_load;
 			load_sum += load_trace[index_t_load];
-			bool is_home = allDailyStatuses[ev_day][hour].isAtHome;
+
+			bool isCharging = false;
+			bool isHome = allDailyStatuses[ev_day][hour].isAtHome;
 
 			std::pair<double, double> operationResult;
 			double ev_b = get_ev_b(allDailyStatuses[ev_day], hour, last_soc);
-			double ev_b_before = ev_b;
-			double maxCharging;
+			double maxCharging = 0.0;
 
 			if (Operation_policy == "safe_unidirectional")
 			{
-				if (is_home == true)
+				if (isHome == true)
 				{
 					maxCharging = get_maxCharging(ev_b);
 				}
-				else
-				{
-					maxCharging = 0.0;
-				}
+
 				if (maxCharging > 0)
 				{
-					z = true;
-				}
-				// maxCharging = 0.0;
-				// z = false;
-				// ev_b = 0;
-				// is_home = false;
-				double hourly_laod = load_trace[index_t_load] + maxCharging;
-				total_load += hourly_laod;
-
-				// solar_trace[index_t_solar] = 0; for W+E and E sceanrios
-				c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
-				d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
-				// if we use the grid to charge the EV, assume that we first try to maximise charging from solar and covering load from solar
-
-				// we assume we have no battery here
-				//!! modify the battery size to be 0
-				double after_load = load_trace[index_t_load] - solar_trace[index_t_solar] * pv;
-				if (after_load < 0)
-				{
-					// only need the grid to charge the EV at this hour
-					double rest_ev = maxCharging + after_load;
-					total_cost = total_cost + rest_ev * 0.07;
-				}
-				else if (after_load > 0)
-				{
-					if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4)
-					{
-						// special grid tariff for home load
-						total_cost = total_cost + after_load * 0.07;
-						total_cost = total_cost + maxCharging * 0.07;
-					}
-					else
-					{
-						total_cost = total_cost + after_load * 0.35;
-						total_cost = total_cost + maxCharging * 0.07;
-					}
+					isCharging = true;
 				}
 
-				max_c = fmin(calc_max_charging(c, b), alpha_c);
-				max_d = fmin(calc_max_discharging(d, b), alpha_d);
-				// cout << "BEFORE c: " << c << "- d: " << d << "- max_c: " << max_c << "- max_d: " << max_d << "- ev_b: " << ev_b << "- b : " << b << endl;
-				operationResult = unidirectional_static(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home, hour);
+				double hourly_load = load_trace[index_t_load] + maxCharging;
+				total_load += hourly_load;
+
+				c = solar_trace[index_t_solar] * pv - hourly_load; // Remaining solar power after covering load
+				d = hourly_load - solar_trace[index_t_solar] * pv; // Missing power to cover load
+
+				operationResult = safe_unidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
 			}
 			else if (Operation_policy == "hybrid_bidirectional")
 			{
-				int chargingHour = lastp(allDailyStatuses[ev_day], ev_b, hour);
-				double maxCharging = 0.0;
-
-				// TODO: Can be rewritten in a more robust way to ensure that the EV is charging also when the chargingHour is in the past.
-				// For instance if the car is only home for 2 hours and has a very low battery level, the charging Hour would be in the past by multiple hours
-				// and we wouldn't charge at all.
-				if (chargingHour == hour)
+				// Check if EV should currently be charging
+				isCharging = get_is_charging(allDailyStatuses[ev_day], ev_b, hour);
+				if (isCharging)
 				{
-					z = true;
 					maxCharging = get_maxCharging(ev_b);
 				}
-				else
-				{
-					z = false;
-				}
-				// maxCharging = 0.0;
-				// z = false;
-				// ev_b = 0;
-				// is_home = false;
-				double hourly_laod = load_trace[index_t_load] + maxCharging;
-				total_load += hourly_laod;
-				// solar_trace[index_t_solar] = 0; for W+E and E sceanrios
-				c = fmax(solar_trace[index_t_solar] * pv - hourly_laod, 0);
-				d = fmax(hourly_laod - solar_trace[index_t_solar] * pv, 0);
-				// we assume we have no battery here
-				//!! modify the battery size to be 0
-				// TODO: Is it correct to assume that we have no battery here? Load can also be covered from the battery in maximize_solar_charging
-				// and therefore it shouldn't add to the total_cost. Same question for unidirectional case.
-				double after_load = load_trace[index_t_load] - solar_trace[index_t_solar] * pv;
-				if (after_load < 0)
-				{
-					// only need the grid to charge the EV at this hour
-					double rest_ev = maxCharging + after_load;
-					// TODO: What if rest_ev is negative? Do we feed back to the grid and therefore the total_cost is decreased? Same in unidirectional case.
-					total_cost = total_cost + rest_ev * 0.07;
-				}
-				else if (after_load > 0)
-				{
-					if (z == false && is_home == true)
-					{
-						// try to cover rest load from EV before using the grid
-						double max_d_ev = fmin(calc_max_discharging_ev(after_load, ev_b, min_soc, ev_battery_capacity), charging_rate);
-						after_load -= -max_d_ev;
-						// The electricity discharged from the EV needs to be excluded from the total load as it has already been included when the EV was charged.
-						// Example: If we never drive, the total load should be equal to the load trace. However, if we cover the load using the EV battery, the total load
-						// is equal to load_trace + max_d_ev. Therefore we need to subtract it here.
-						total_load -= max_d_ev;
-					}
-					if (after_load > 0)
-					{
-						if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4)
-						{
-							// special grid tariff for home load
-							total_cost = total_cost + after_load * 0.07;
-							total_cost = total_cost + maxCharging * 0.07;
-						}
-						else
-						{
-							total_cost = total_cost + after_load * 0.35;
-							total_cost = total_cost + maxCharging * 0.07;
-						}
-					}
-				}
 
-				max_c = fmin(calc_max_charging(c, b), alpha_c);
-				max_d = fmin(calc_max_discharging(d, b), alpha_d);
-				// cout << "BEFORE c: " << c << "d: " << d << "max_c: " << max_c << "max_d: " << max_d << "ev_b: " << ev_b << "b : " <<b << endl;
-				operationResult = maximise_solar_charging(b, ev_b, c, d, z, max_c, max_d, maxCharging, is_home, hour);
+				double hourly_load = load_trace[index_t_load] + maxCharging;
+				total_load += hourly_load;
+
+				c = solar_trace[index_t_solar] * pv - hourly_load; // Remaining solar power after covering load
+				d = hourly_load - solar_trace[index_t_solar] * pv; // Missing power to cover load
+
+				operationResult = hybrid_bidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
 			}
 			else
 			{
 				std::cout << "ERROR: Invalid operation policy selected" << std::endl;
 			}
 
+			// Update battery levels
 			ev_b = operationResult.first;
 			b = operationResult.second;
-			allDailyStatuses[ev_day][hour].currentSOC = ev_b;
 			last_soc = ev_b;
-			if (ev_b_before < ev_b)
-			{
-				charged_last_hour = true;
-			}
-			else
-			{
-				charged_last_hour = false;
-			}
-
-			if (convertTimeToHour(allDailyStatuses[ev_day][hour].nextDepartureTime) == hour + 1)
-			{
-				socValues.push_back(last_soc);
-			}
+			std::cout << "battery: " << ev_b << " is home " << isHome << std::endl;
 		}
 	}
-
+	std::cout << "Final EV Battery level: " << last_soc << " Final Stationary Battery Level: " << b << " EV power used: " << ev_power_used << " household load used " << load_sum << " load+car " << ev_power_used + load_sum << std::endl;
 	if (metric == 0)
 	{
 		// lolp

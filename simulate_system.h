@@ -20,7 +20,7 @@ double static eta_c = 0.9942;
 double static alpha_d = a2_intercept * 1.0; // the 1 indicates the maximum discharging C-rate
 double static alpha_c = a2_intercept * 1.0; // the 1 indicates the maximum charging C-rate
 
-double static eta_d_ev = 0.935; // taking reciprocal so that we don't divide by eta_d when updating the battery energy content
+double static eta_d_ev = 1.0 / 0.935; // taking reciprocal so that we don't divide by eta_d when updating the battery energy content
 double static eta_c_ev = 0.935;
 
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index,

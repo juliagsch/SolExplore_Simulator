@@ -15,7 +15,7 @@
 using namespace std;
 
 // chunk_size: length of time (in days)
-void run_simulations(vector<double> &load, vector<double> &solar, int metric, int chunk_size, int number_of_chunks, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc)
+void run_simulations(vector<double> &load, vector<double> &solar, int metric, int chunk_size, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc)
 {
 
 	// set random seed to a specific value if you want consistency in results
@@ -34,7 +34,7 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 	battery_result = 0;
 	pv_result = 4;
 
-	sim(load, solar, 0, t_chunk_size, battery_result, pv_result, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+	sim(load, solar, 0, t_chunk_size, 0, 0, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 }
 
 int main(int argc, char **argv)
@@ -63,10 +63,10 @@ int main(int argc, char **argv)
 	// Generate all daily statuses
 	std::vector<std::vector<EVStatus>> allDailyStatuses = generateAllDailyStatuses(evRecords);
 
-	run_simulations(load, solar, metric, days_in_chunk, number_of_chunks, evRecords, allDailyStatuses, max_soc, min_soc);
+	run_simulations(load, solar, metric, days_in_chunk, evRecords, allDailyStatuses, max_soc, min_soc);
 	cout << "Grid import: " << grid_import << endl;
 	cout << "Total Cost: " << total_cost << endl;
-	// cout << "Total Hours: " << total_hours << endl;
-	// cout << "Total load: " << total_load << endl;
+	cout << "Total Hours: " << total_hours << endl;
+	cout << "Total load: " << total_load << endl;
 	return 0;
 }

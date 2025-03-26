@@ -28,6 +28,7 @@ struct EVStatus
     bool isAtHome;
     std::string nextDepartureTime;
     double currentSOC;
+    double powerUsed;
 };
 
 // Function declarations

@@ -8,7 +8,7 @@ using namespace std;
 
 // INPUTS
 
-extern double B_inv; // cost per cell
+extern double B_inv;  // cost per cell
 extern double PV_inv; // cost per unit (kW) of PV
 extern double epsilon;
 extern double confidence;
@@ -34,6 +34,8 @@ extern double min_soc;
 extern double max_soc;
 extern double ev_battery_capacity;
 extern double charging_rate;
+extern double discharging_rate;
+
 extern std::string path_to_ev_data;
 extern int loadNumber;
 extern std::string wfh_type;
@@ -41,14 +43,10 @@ extern std::string wfh_type;
 // common.h
 extern std::string Operation_policy;
 
-
-// defines the number of samples, set via command line input
-int static number_of_chunks = 365;
-
-double static T_u = 1.0; // this is the time unit, representing the number of hours in each time slot of the load and solar traces
+double static T_u = 1.0; // this is the time unit, representing the number of hours in each time slot of the load and solar traces. If changed, the simulation code will likely break.
 double static kWh_in_one_cell = 0.011284;
 double static num_cells_steps = 400; // search in total of n steps for cells
-double static num_pv_steps = 350; // search in total of n steps for pv
+double static num_pv_steps = 350;	 // search in total of n steps for pv
 
 extern int ev_charged;
 extern int ev_discharged;
@@ -61,7 +59,6 @@ extern double total_hours;
 
 extern std::vector<double> socValues;
 
-
 struct ChargingEvent
 {
 	int hour;
@@ -70,23 +67,18 @@ struct ChargingEvent
 
 extern std::vector<ChargingEvent> chargingEvents;
 
-struct SimulationResult {
+struct SimulationResult
+{
 
 	double B;
 	double C;
 	double cost;
 
-	SimulationResult(double B_val, double C_val, double cost_val) : 
-					B(B_val), C(C_val), cost(cost_val) {}
-
+	SimulationResult(double B_val, double C_val, double cost_val) : B(B_val), C(C_val), cost(cost_val) {}
 };
 
 vector<double> read_data_from_file(string);
 
-int process_input(char**, bool);
-
-
-
-
+int process_input(char **, bool);
 
 #endif

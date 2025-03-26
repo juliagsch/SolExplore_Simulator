@@ -501,7 +501,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 
     double b = cells;
     // set storage to 4kwh for our experiment:
-    //b = 5.0;
+    // b = 5.0;
     // start each simulation with a fully charged battery
     loss_events = 0;
     load_deficit = 0;
@@ -538,7 +538,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
     int trace_days = min(trace_length_load / 24, trace_length_solar / 24);
     int load_s_Start_day = rand() % trace_days;
     start_index = load_s_Start_day * 24;
-    for (int day = 0; day < number_of_chunks; day++)
+    for (int day = 0; day < days_in_chunk; day++)
     {
 
         int ev_day = day + Ev_start;

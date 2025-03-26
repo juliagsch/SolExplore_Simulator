@@ -29,6 +29,7 @@ double min_soc;
 double ev_battery_capacity = 40.0;
 int t_ch = 3;
 double charging_rate = 7.4;
+double discharging_rate = 7.4;
 
 int ev_charged = 0;
 int ev_discharged = 0;

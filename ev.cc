@@ -168,8 +168,13 @@ std::vector<EVStatus> generateDailyStatus(const std::vector<EVRecord> &dayRecord
                 int arrivalHour = convertTimeToHour(record.arrivalTime);
                 if (hour >= departureHour && hour < arrivalHour)
                 {
-                    status.isAtHome = false; // EV is away during this hour
-                    break;                   // No need to check other records for this hour
+                    status.isAtHome = false; // EV is away during this hours
+                    status.powerUsed = record.socOnDeparture - record.socOnArrival;
+                    break; // No need to check other records for this hour
+                }
+                else
+                {
+                    status.powerUsed = 0.0;
                 }
             }
         }
@@ -303,7 +308,6 @@ std::vector<std::vector<EVStatus>> generateAllDailyStatuses(const std::vector<EV
     // Generate and add the last day's statuses
     auto lastDayStatuses = generateDailyStatus(dayRecords, lastDaySOC);
     allDailyStatuses.push_back(lastDayStatuses);
-
     return allDailyStatuses;
 }
 
@@ -338,7 +342,7 @@ void printAllEVStatusesToCSV(const std::vector<std::vector<EVStatus>> &allDailyS
     }
 
     // Write CSV headers
-    outFile << "Day,Day Name,Hour,Status,Next Departure Time,Current SOC\n";
+    outFile << "Day,Day Name,Hour,Status,Next Departure Time,Power Used,Current SOC\n";
 
     for (const auto &dailyStatuses : allDailyStatuses)
     {
@@ -353,6 +357,7 @@ void printAllEVStatusesToCSV(const std::vector<std::vector<EVStatus>> &allDailyS
                 outFile << std::setw(2) << status.hour << ",";
                 outFile << (status.isAtHome ? "At Home" : "Away") << ",";
                 outFile << status.nextDepartureTime << ",";
+                outFile << status.powerUsed << ",";
                 outFile << std::fixed << std::setprecision(2) << status.currentSOC << "\n";
             }
         }
