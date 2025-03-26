@@ -10,8 +10,6 @@ using namespace std;
 
 int loss_events = 0;
 double load_deficit = 0;
-double load_sum = 0;
-double ev_power_used = 0;
 
 double calc_max_charging(double power, double b_prev)
 {
@@ -117,6 +115,7 @@ std::pair<double, double> safe_unidirectional(double b, double ev_b, double c, d
 	if (isCharging == true)
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
+		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
 		ev_charged += maxCharging;
 		ChargingEvent event;
 		event.hour = hour;
@@ -167,6 +166,7 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 	if (isCharging == true)
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
+		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
 		ev_charged += maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 		ChargingEvent event;
 		event.hour = hour;
@@ -182,6 +182,7 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 		{
 			double max_c_ev = calc_max_charging_ev(fmin(c, charging_rate), ev_b);
 			ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
+			power_lost += (max_c_ev * T_u) - (max_c_ev * eta_c_ev * T_u);
 			ev_charged += max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
 			if (max_c_ev > 0)
 			{
@@ -213,6 +214,7 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 		{
 			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), discharging_rate / (eta_d_ev * T_u));
 			ev_b = ev_b - max_d_ev * eta_d_ev * T_u;
+			power_lost += (max_d_ev * eta_d_ev * T_u) - (max_d_ev * T_u);
 			ev_discharged += max_d_ev; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 			res = res - max_d_ev;
 
@@ -255,7 +257,7 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 	{
 		ev_b -= dailyStatuses[hour - 1].powerUsed;
 		ev_power_used += dailyStatuses[hour - 1].powerUsed;
-		std::cout << "car arrived back home, power used: " << dailyStatuses[hour - 1].powerUsed << " last soc: " << last_soc << " new ev: " << ev_b << std::endl;
+		// std::cout << "car arrived back home, power used: " << dailyStatuses[hour - 1].powerUsed << " last soc: " << last_soc << " new ev: " << ev_b << std::endl;
 	}
 
 	return ev_b;
@@ -271,10 +273,11 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	total_load = 0;
 	total_cost = 0;
 
-	double b = 0.0;			// Start simulation with an empty stationary battery
-	double c = 0.0;			// Remaining solar energy after covering household and EV charging load
-	double d = 0.0;			// Missing energy to cover household and EV charging load after using produced solar energy.
-	double last_soc = 32.0; // EV battery level during the previous time step
+	double b = 0.0;								// Start simulation with an empty stationary battery
+	double c = 0.0;								// Remaining solar energy after covering household and EV charging load
+	double d = 0.0;								// Missing energy to cover household and EV charging load after using produced solar energy.
+	double initial_battery_level_ev = 32.0;		// EV battery level at the start of the simulation
+	double last_soc = initial_battery_level_ev; // EV battery level during the previous time step
 
 	int index_t_solar; // Current index in solar trace
 	int index_t_load;  // Current index in load trace
@@ -348,15 +351,17 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			{
 				std::cout << "ERROR: Invalid operation policy selected" << std::endl;
 			}
+			max_charging_total += maxCharging;
 
 			// Update battery levels
 			ev_b = operationResult.first;
 			b = operationResult.second;
 			last_soc = ev_b;
-			std::cout << "battery: " << ev_b << " is home " << isHome << std::endl;
+			// std::cout << "battery: " << ev_b << " is home " << isHome << " is charging " << isCharging << std::endl;
 		}
 	}
-	std::cout << "Final EV Battery level: " << last_soc << " Final Stationary Battery Level: " << b << " EV power used: " << ev_power_used << " household load used " << load_sum << " load+car " << ev_power_used + load_sum << std::endl;
+	ev_battery_diff = last_soc - initial_battery_level_ev;
+	// std::cout << "Final EV Battery level: " << last_soc << " Final Stationary Battery Level: " << b << " EV power used: " << ev_power_used << " household load used " << load_sum << " max charging " << max_charging_total << " power loss " << power_lost << " load+car+powerloss " << ev_power_used + load_sum + power_lost << std::endl;
 	if (metric == 0)
 	{
 		// lolp

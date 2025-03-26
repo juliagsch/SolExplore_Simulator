@@ -64,9 +64,14 @@ int main(int argc, char **argv)
 	std::vector<std::vector<EVStatus>> allDailyStatuses = generateAllDailyStatuses(evRecords);
 
 	run_simulations(load, solar, metric, days_in_chunk, evRecords, allDailyStatuses, max_soc, min_soc);
-	cout << "Grid import: " << grid_import << endl;
+	cout << fixed << "Grid import: " << grid_import << endl;
 	cout << "Total Cost: " << total_cost << endl;
 	cout << "Total Hours: " << total_hours << endl;
 	cout << "Total load: " << total_load << endl;
+	cout << "EV Power Usage: " << ev_power_used << endl;
+	cout << "Total Household Load: " << load_sum << endl;
+	cout << "Power Lost: " << power_lost << endl;
+	cout << "EV Power Charged: " << max_charging_total << endl;
+	cout << "EV Battery Diff: " << ev_battery_diff << endl;
 	return 0;
 }

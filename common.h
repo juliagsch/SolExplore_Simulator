@@ -56,6 +56,11 @@ extern double grid_import;
 extern double total_load;
 extern double total_cost;
 extern double total_hours;
+extern double load_sum;			  // Total load used
+extern double ev_power_used;	  // Total power used by ev driving (discharging to power house not included)
+extern double power_lost;		  // Electricity lost due to charging and discharging efficiencies
+extern double max_charging_total; // Total electricity used to charge the EV
+extern double ev_battery_diff;	  // EV battery difference between beginning and start of the simulation
 
 extern std::vector<double> socValues;
 
