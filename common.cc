@@ -42,7 +42,7 @@ double total_cost = 0.0;
 double total_hours = 0.0;
 double load_sum = 0;           // Total load used
 double ev_power_used = 0;      // Total power used by ev driving (discharging to power house not included)
-double power_lost = 0;         // Electricity lost due to charging and discharging efficiencies
+double power_lost = 0;         // Electricity lost due to charging and discharging efficiencies of EV
 double max_charging_total = 0; // Total electricity used to charge the EV
 double ev_battery_diff = 0;    // EV battery difference between beginning and start of the simulation
 

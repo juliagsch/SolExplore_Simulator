@@ -1,9 +1,11 @@
+"""Tests are written for the case when we have an EV but no PV."""
 import os
 import pytest
 import subprocess
 from test_utils import extract_result
 
 test_data_path = os.path.abspath("./tests/test_data")
+eta_ev = 0.935 # Charging and discharging efficiency of the EV
 
 def test_unidirectional():
     house_file_path = f"{test_data_path}/house1.txt"
@@ -21,11 +23,12 @@ def test_unidirectional():
     assert result["household_load"] == 24
     assert result["total_hours"] == 24
     assert result["total_load"] == result["grid_import"]
-    assert result["ev_power_charged"] == result["ev_power_used"]+result["ev_battery_diff"]+result["power_lost"]
-    assert result["total_load"] == result["household_load"]+result["ev_power_used"]+result["ev_battery_diff"]+result["power_lost"]
-    assert result["total_cost"] == result["ev_power_charged"]*0.07 + 19*0.35 + 5*0.07
+    assert result["ev_power_charged"] == pytest.approx(result["ev_power_used"]+result["ev_battery_diff"]+result["power_lost"], 1e-6)
+    assert result["total_load"] == pytest.approx(result["household_load"]+result["ev_power_used"]+result["ev_battery_diff"]+result["power_lost"], 1e-6)
+    assert result["total_cost"] == pytest.approx(result["ev_power_charged"]*0.07 + 19*0.35 + 5*0.07, 1e-6)
+    assert result["power_lost"] == pytest.approx(result["ev_power_charged"]*(1-eta_ev), 1e-6)
 
-def test_biidirectional():
+def test_bidirectional():
     house_file_path = f"{test_data_path}/house1.txt"
     solar_file_path = f"{test_data_path}/solar1.txt"
     ev_file_path = f"{test_data_path}/ev1.csv"
@@ -44,8 +47,9 @@ def test_biidirectional():
     # Addition can lead to small rounding error, therefore we need to approximate.
     assert result["total_load"] == pytest.approx(result["household_load"]+result["ev_power_used"]+result["power_lost"]+result["ev_battery_diff"], 1e-6)
     assert result["total_cost"] == pytest.approx(result["ev_power_charged"]*0.07 + 6*0.35, 1e-6) # We can always cover the household load from the EV battery except if it is away or charging (2 hours driving, 4h charging)
+    assert result["power_lost"] == pytest.approx((result["ev_power_charged"])*(1-eta_ev)+(18*((1.0 / eta_ev)-1)), 1e-6) # We discharge 18 kWh from the EV battery
 
-def test_biidirectional_two_trips():
+def test_bidirectional_two_trips():
     house_file_path = f"{test_data_path}/house1.txt"
     solar_file_path = f"{test_data_path}/solar1.txt"
     ev_file_path = f"{test_data_path}/ev2.csv"
@@ -84,5 +88,5 @@ def test_uni_vs_bi():
 
     assert result_uni["ev_power_used"] == result_bi["ev_power_used"]
     assert result_uni["household_load"] == result_bi["household_load"]
-    assert result_uni["power_lost"] <= result_bi["power_lost"]
-    assert result_uni["ev_power_charged"] <= result_bi["ev_power_charged"]
+    assert result_uni["power_lost"] < result_bi["power_lost"]
+    assert result_uni["ev_power_charged"] < result_bi["ev_power_charged"]

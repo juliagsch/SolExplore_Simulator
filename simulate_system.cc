@@ -11,6 +11,20 @@ using namespace std;
 int loss_events = 0;
 double load_deficit = 0;
 
+void update_parameters(double n)
+{
+
+	num_cells = n;
+
+	a1_intercept = 0.0 * num_cells;
+
+	a2_intercept = kWh_in_one_cell * num_cells;
+
+	alpha_d = a2_intercept * 1.0;
+	alpha_c = a2_intercept * 1.0;
+	return;
+}
+
 double calc_max_charging(double power, double b_prev)
 {
 
@@ -18,7 +32,7 @@ double calc_max_charging(double power, double b_prev)
 
 	for (double c = power; c >= 0; c -= step)
 	{
-		double upper_lim = a2_slope * (c / nominal_voltage_c) + 5.0;
+		double upper_lim = a2_slope * (c / nominal_voltage_c) + a2_intercept;
 		double b = b_prev + c * eta_c * T_u;
 		if (b <= upper_lim)
 		{
@@ -35,7 +49,7 @@ double calc_max_discharging(double power, double b_prev)
 
 	for (double d = power; d >= 0; d -= step)
 	{
-		double lower_lim = a1_slope * (d / nominal_voltage_d) + 0.0;
+		double lower_lim = a1_slope * (d / nominal_voltage_d) + a1_intercept;
 		double b = b_prev - d * eta_d * T_u;
 		if (b >= lower_lim)
 		{
@@ -192,6 +206,8 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 				chargingEvents.push_back(event);
 			}
 			c -= max_c_ev;
+			total_load += max_c_ev;
+			max_charging_total += max_c_ev;
 		}
 		// If there is still electricity remaining, we charge the stationary battery.
 		if (c > 0)
@@ -266,18 +282,23 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 // call it with a specific battery and PV size and want to compute the loss
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
 {
+	update_parameters(cells);
 	loss_events = 0;
 	load_deficit = 0;
-	grid_import = 0;
 	load_sum = 0;
-	total_load = 0;
-	total_cost = 0;
 
 	double b = 0.0;								// Start simulation with an empty stationary battery
 	double c = 0.0;								// Remaining solar energy after covering household and EV charging load
 	double d = 0.0;								// Missing energy to cover household and EV charging load after using produced solar energy.
 	double initial_battery_level_ev = 32.0;		// EV battery level at the start of the simulation
 	double last_soc = initial_battery_level_ev; // EV battery level during the previous time step
+
+	// We assume that the initial battery charge of the EV comes from the grid.
+	grid_import = initial_battery_level_ev / eta_c_ev;
+	total_load = grid_import;
+	total_cost = grid_import * 0.07;
+	power_lost = grid_import - initial_battery_level_ev;
+	max_charging_total = grid_import;
 
 	int index_t_solar; // Current index in solar trace
 	int index_t_load;  // Current index in load trace
@@ -357,10 +378,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 			ev_b = operationResult.first;
 			b = operationResult.second;
 			last_soc = ev_b;
-			// std::cout << "battery: " << ev_b << " is home " << isHome << " is charging " << isCharging << std::endl;
 		}
 	}
-	ev_battery_diff = last_soc - initial_battery_level_ev;
+	ev_battery_diff = last_soc;
 	// std::cout << "Final EV Battery level: " << last_soc << " Final Stationary Battery Level: " << b << " EV power used: " << ev_power_used << " household load used " << load_sum << " max charging " << max_charging_total << " power loss " << power_lost << " load+car+powerloss " << ev_power_used + load_sum + power_lost << std::endl;
 	if (metric == 0)
 	{

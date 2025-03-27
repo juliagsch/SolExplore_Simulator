@@ -23,6 +23,8 @@ double static alpha_c = a2_intercept * 1.0; // the 1 indicates the maximum charg
 double static eta_d_ev = 1.0 / 0.935; // taking reciprocal so that we don't divide by eta_d when updating the battery energy content
 double static eta_c_ev = 0.935;
 
+void update_parameters(double n);
+
 double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index,
 		   double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start);
 

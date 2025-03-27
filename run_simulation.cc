@@ -34,7 +34,7 @@ void run_simulations(vector<double> &load, vector<double> &solar, int metric, in
 	battery_result = 0;
 	pv_result = 4;
 
-	sim(load, solar, 0, t_chunk_size, 0, 0, 0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+	sim(load, solar, 0, t_chunk_size, 0, pv_result, battery_result, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
 }
 
 int main(int argc, char **argv)
@@ -64,14 +64,14 @@ int main(int argc, char **argv)
 	std::vector<std::vector<EVStatus>> allDailyStatuses = generateAllDailyStatuses(evRecords);
 
 	run_simulations(load, solar, metric, days_in_chunk, evRecords, allDailyStatuses, max_soc, min_soc);
-	cout << fixed << "Grid import: " << grid_import << endl;
+	cout << fixed << "Grid import: " << grid_import << endl; // Total electricity imported from grid
 	cout << "Total Cost: " << total_cost << endl;
 	cout << "Total Hours: " << total_hours << endl;
-	cout << "Total load: " << total_load << endl;
-	cout << "EV Power Usage: " << ev_power_used << endl;
-	cout << "Total Household Load: " << load_sum << endl;
-	cout << "Power Lost: " << power_lost << endl;
-	cout << "EV Power Charged: " << max_charging_total << endl;
-	cout << "EV Battery Diff: " << ev_battery_diff << endl;
+	cout << "Total load: " << total_load << endl;				// Total load (EV + household + (dis)charging loss)
+	cout << "EV Power Usage: " << ev_power_used << endl;		// EV power used to drive
+	cout << "Total Household Load: " << load_sum << endl;		// Total load used by household (excluding EV)
+	cout << "Power Lost: " << power_lost << endl;				// Electricity lost due to (dis)charging inefficiencies
+	cout << "EV Power Charged: " << max_charging_total << endl; // Electricity used to charge EV
+	cout << "EV Battery Diff: " << ev_battery_diff << endl;		// Remaining battery level of EV at simulation end
 	return 0;
 }
