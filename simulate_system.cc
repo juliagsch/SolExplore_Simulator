@@ -318,7 +318,7 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 }
 
 // call it with a specific battery and PV size and want to compute the loss
-double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
+double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start, bool printGridCost)
 {
 	update_parameters(cells);
 	loss_events = 0;
@@ -439,7 +439,10 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 		}
 	}
 	ev_battery_diff = last_soc;
-	// std::cout << "Final EV Battery level: " << last_soc << " Final Stationary Battery Level: " << b << " EV power used: " << ev_power_used << " household load used " << load_sum << " max charging " << max_charging_total << " power loss " << power_lost << " load+car+powerloss " << ev_power_used + load_sum + power_lost << std::endl;
+	if (printGridCost)
+	{
+		std::cout << "Grid Cost: " << total_cost << std::endl;
+	}
 	if (metric == 0)
 	{
 		// lolp
@@ -452,8 +455,85 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	}
 }
 
-void simulate(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
+vector<SimulationResult> simulate(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
 {
+	// first, find the lowest value of cells that will get us epsilon loss when the PV is maximized
+	// use binary search
+	double cells_U = cells_max;
+	double cells_L = cells_min;
+	double mid_cells = 0.0;
 	double loss = 0.0;
-	loss = sim(load_trace, solar_trace, start_index, end_index, 0, 4, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start);
+
+	// binary search to find min. battery size that works for pvmax
+	while (cells_U - cells_L > cells_step)
+	{
+
+		mid_cells = (cells_L + cells_U) / 2.0;
+		// simulate with PV max first
+		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
+		if (loss > epsilon)
+		{
+			cells_L = mid_cells;
+		}
+		else
+		{
+			// (loss <= epsilon)
+			cells_U = mid_cells;
+		}
+	}
+
+	// set the starting number of battery cells to the min. battery needed for pvmax
+	double starting_cells = cells_U;
+	double starting_cost = B_inv * starting_cells + PV_inv * pv_max;
+	double lowest_feasible_pv = pv_max;
+
+	double lowest_cost = starting_cost;
+	double lowest_B = starting_cells * kWh_in_one_cell;
+	double lowest_C = pv_max;
+
+	vector<SimulationResult> curve;
+	// first point on the curve
+	curve.push_back(SimulationResult(starting_cells * kWh_in_one_cell, lowest_feasible_pv, starting_cost));
+
+	for (double cells = starting_cells; cells <= cells_max; cells += cells_step)
+	{
+
+		// for each value of cells, find the lowest pv that meets the epsilon loss constraint
+		double loss = 0;
+		while (true)
+		{
+			// reduce pv size and find by how much you need to increase battery
+			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
+			if (loss < epsilon)
+			{
+				lowest_feasible_pv -= pv_step;
+			}
+			else
+			{
+
+				break;
+			}
+
+			// this only happens if the trace is very short, since the battery starts half full
+			// and can prevent loss without pv for a short time
+			if (lowest_feasible_pv <= 0)
+			{
+				lowest_feasible_pv = 0;
+				break;
+			}
+		}
+
+		double cost = B_inv * cells + PV_inv * lowest_feasible_pv;
+		// push all pv battery combinations that work
+		curve.push_back(SimulationResult(cells * kWh_in_one_cell, lowest_feasible_pv, cost));
+
+		if (cost < lowest_cost)
+		{
+			lowest_cost = cost;
+			lowest_B = cells * kWh_in_one_cell;
+			lowest_C = lowest_feasible_pv;
+		}
+	}
+
+	return curve;
 }

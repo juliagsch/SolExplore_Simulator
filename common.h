@@ -43,6 +43,9 @@ extern std::string wfh_type;
 // common.h
 extern std::string Operation_policy;
 
+// defines the number of samples, set via command line input
+int static number_of_chunks = 100;
+
 double static T_u = 1.0; // this is the time unit, representing the number of hours in each time slot of the load and solar traces. If changed, the simulation code will likely break.
 double static kWh_in_one_cell = 0.011284;
 double static num_cells_steps = 400; // search in total of n steps for cells
