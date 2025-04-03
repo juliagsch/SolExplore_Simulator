@@ -441,7 +441,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	ev_battery_diff = last_soc;
 	if (printGridCost)
 	{
-		std::cout << "Grid Cost: " << total_cost << std::endl;
+		std::cout << "Grid Cost: " << total_cost << " Total Load: " << total_load << " Grid Import: " << grid_import << std::endl;
 	}
 	if (metric == 0)
 	{

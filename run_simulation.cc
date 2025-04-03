@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 	SimulationResult sr = run_simulations(load, solar, metric, days_in_chunk, evRecords, allDailyStatuses, max_soc, min_soc);
 
 	double cost = sr.B / kWh_in_one_cell * B_inv + sr.C * PV_inv;
-	cout << "Battery: " << sr.B << " PV:" << sr.C << " Total Cost: " << cost << endl;
+	cout << "Battery: " << sr.B << " PV: " << sr.C << " Total Cost: " << cost << endl;
 	// Runs the simulation with the optimal sizing again to compute the grid cost for the payback-time evaluation.
 	int t_chunk_size = days_in_chunk * (24 / T_u);
 	double battery_cells = sr.B / kWh_in_one_cell;

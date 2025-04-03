@@ -17,8 +17,6 @@ extern int days_in_chunk;
 
 extern vector<double> load;
 extern vector<double> solar;
-extern double battery_result;
-extern double pv_result;
 
 // define the upper and lower values to test for battery cells and pv,
 // as well as the step size of the search

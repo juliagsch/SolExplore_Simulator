@@ -19,8 +19,6 @@ double cells_step; // search in step of x cells
 double pv_min;
 double pv_max;
 double pv_step; // search in steps of x kW
-double battery_result;
-double pv_result;
 int loadNumber;
 
 double max_soc;
@@ -350,12 +348,6 @@ int process_input(char **argv, bool process_metric_input)
     // cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
     wfh_type = extract_wfh_type(path_to_ev_data);
     // cout << "wfh_type = " << wfh_type << endl;
-
-    std::string battery_result_string = argv[++i];
-    battery_result = stod(battery_result_string);
-
-    string pv_result_string = argv[++i];
-    pv_result = stod(pv_result_string);
 
 #ifdef DEBUG
     cout << " path_to_ev_data = " << path_to_ev_data << endl;
