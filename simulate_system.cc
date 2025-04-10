@@ -4,13 +4,13 @@
 #include <utility>
 #include "simulate_system.h"
 #include "ev.h"
-#include "common.h"
 
 using namespace std;
 
 int loss_events = 0;
 double load_deficit = 0;
 
+// parameters specified for an NMC cell with operating range of 1 C charging and discharging
 void update_parameters(double n)
 {
 
@@ -25,6 +25,8 @@ void update_parameters(double n)
 	return;
 }
 
+// decrease the applied (charging) power by increments of (1/30) until the power is
+// low enough to avoid violating the upper energy limit constraint.
 double calc_max_charging(double power, double b_prev)
 {
 
@@ -42,6 +44,8 @@ double calc_max_charging(double power, double b_prev)
 	return 0;
 }
 
+// decrease the applied (discharging) power by increments of (1/30) until the power is
+// low enough to avoid violating the lower energy limit constraint.
 double calc_max_discharging(double power, double b_prev)
 {
 
@@ -131,7 +135,6 @@ std::pair<double, double> no_ev(double b, double c, double d, int hour)
 	{
 		double max_c = fmin(calc_max_charging(c, b), alpha_c);
 		b = b + max_c * eta_c * T_u;
-		stat_charged += max_c;
 	}
 
 	// Electricity is missing to cover household  load
@@ -139,7 +142,6 @@ std::pair<double, double> no_ev(double b, double c, double d, int hour)
 	{
 		double max_d = fmin(calc_max_discharging(d, b), alpha_d);
 		b = b - max_d * eta_d * T_u;
-		stat_discharged += max_d;
 		double res = d - max_d;
 		if (res > 0)
 		{
@@ -168,7 +170,6 @@ std::pair<double, double> safe_unidirectional(double b, double ev_b, double c, d
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
-		ev_charged += maxCharging;
 		ChargingEvent event;
 		event.hour = hour;
 		event.chargingAmount = maxCharging;
@@ -180,7 +181,6 @@ std::pair<double, double> safe_unidirectional(double b, double ev_b, double c, d
 	{
 		double max_c = fmin(calc_max_charging(c, b), alpha_c);
 		b = b + max_c * eta_c * T_u;
-		stat_charged += max_c;
 	}
 
 	// Electricity is missing to cover household and expected EV load
@@ -188,7 +188,6 @@ std::pair<double, double> safe_unidirectional(double b, double ev_b, double c, d
 	{
 		double max_d = fmin(calc_max_discharging(d, b), alpha_d);
 		b = b - max_d * eta_d * T_u;
-		stat_discharged += max_d;
 		double res = d - max_d;
 		if (res > 0)
 		{
@@ -219,7 +218,6 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
-		ev_charged += maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 		ChargingEvent event;
 		event.hour = hour;
 		event.chargingAmount = maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
@@ -235,7 +233,6 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 			double max_c_ev = calc_max_charging_ev(fmin(c, charging_rate), ev_b);
 			ev_b = ev_b + max_c_ev * eta_c_ev * T_u;
 			power_lost += (max_c_ev * T_u) - (max_c_ev * eta_c_ev * T_u);
-			ev_charged += max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
 			if (max_c_ev > 0)
 			{
 				ChargingEvent event;
@@ -252,7 +249,6 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 		{
 			double max_c = fmin(calc_max_charging(c, b), alpha_c);
 			b = b + max_c * eta_c * T_u;
-			stat_charged += max_c; // TODO: Depending on use case this should be max_c * eta_c * T_u
 		}
 	}
 
@@ -261,7 +257,6 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 	{
 		double max_d = fmin(calc_max_discharging(d, b), alpha_d);
 		b = b - max_d * eta_d * T_u;
-		stat_discharged += max_d;
 		double res = d - max_d;
 
 		if (res > 0 && isCharging == false && isHome == true)
@@ -269,7 +264,6 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), discharging_rate / (eta_d_ev * T_u));
 			ev_b = ev_b - max_d_ev * eta_d_ev * T_u;
 			power_lost += (max_d_ev * eta_d_ev * T_u) - (max_d_ev * T_u);
-			ev_discharged += max_d_ev; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 			res = res - max_d_ev;
 
 			// The electricity discharged from the EV needs to be excluded from the total load as it has already been included when the EV was charged.
@@ -318,7 +312,7 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 }
 
 // call it with a specific battery and PV size and want to compute the loss
-double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start, bool printGridCost)
+double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start_index, size_t end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start, bool printGridCost)
 {
 	update_parameters(cells);
 	loss_events = 0;
@@ -327,6 +321,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	grid_import = 0;
 	total_load = 0;
 	power_lost = 0;
+	total_cost = 0;
 	max_charging_total = 0;
 	double initial_battery_level_ev = 0;
 	double last_soc = 0;
@@ -353,12 +348,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	int trace_length_solar = solar_trace.size();
 	int trace_length_load = load_trace.size();
 
-	// Get start day of the simulation
-	int trace_days = min(trace_length_load / 24, trace_length_solar / 24);
-	int load_s_Start_day = rand() % trace_days;
-	start_index = load_s_Start_day * 24;
-
-	for (int day = 0; day < days_in_chunk; day++)
+	for (int day = 0; day < (end_index - start_index) / 24; day++)
 	{
 		int ev_day = day + Ev_start;
 		ev_day = ev_day % 365;
@@ -446,31 +436,32 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, int start_in
 	if (metric == 0)
 	{
 		// lolp
-		return loss_events / ((end_index - start_index) * 1.0);
+		return loss_events / (double)(end_index - start_index);
 	}
 	else
 	{
 		// metric == 1, eue
-		return load_deficit / (load_sum * 1.0);
+		return load_deficit / (double)total_load;
 	}
 }
 
-vector<SimulationResult> simulate(vector<double> &load_trace, vector<double> &solar_trace, int start_index, int end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
+// Run simulation for provides solar and load trace to find cheapest combination of
+// load and solar that can meet the epsilon target
+vector<SimulationResult> simulate(vector<double> &load_trace, vector<double> &solar_trace,
+								  size_t start_index, size_t end_index, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start)
 {
+
 	// first, find the lowest value of cells that will get us epsilon loss when the PV is maximized
 	// use binary search
 	double cells_U = cells_max;
 	double cells_L = cells_min;
-	double mid_cells = 0.0;
-	double loss = 0.0;
 
-	// binary search to find min. battery size that works for pvmax
 	while (cells_U - cells_L > cells_step)
 	{
+		double mid_cells = (cells_L + cells_U) / 2.0;
+		double loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
 
-		mid_cells = (cells_L + cells_U) / 2.0;
-		// simulate with PV max first
-		loss = sim(load_trace, solar_trace, start_index, end_index, mid_cells, pv_max, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
+		// cout << "sim result with " << a2_intercept << " kWh and " << pv_max << " pv: " << loss << endl;
 		if (loss > epsilon)
 		{
 			cells_L = mid_cells;
@@ -482,57 +473,83 @@ vector<SimulationResult> simulate(vector<double> &load_trace, vector<double> &so
 		}
 	}
 
-	// set the starting number of battery cells to the min. battery needed for pvmax
+	// set the starting number of battery cells to be the upper limit that was converged on
 	double starting_cells = cells_U;
 	double starting_cost = B_inv * starting_cells + PV_inv * pv_max;
 	double lowest_feasible_pv = pv_max;
 
-	double lowest_cost = starting_cost;
-	double lowest_B = starting_cells * kWh_in_one_cell;
-	double lowest_C = pv_max;
-
 	vector<SimulationResult> curve;
-	// first point on the curve
-	curve.push_back(SimulationResult(starting_cells * kWh_in_one_cell, lowest_feasible_pv, starting_cost));
+	curve.emplace_back(starting_cells * kWh_in_one_cell, lowest_feasible_pv, starting_cost);
 
 	for (double cells = starting_cells; cells <= cells_max; cells += cells_step)
 	{
-
 		// for each value of cells, find the lowest pv that meets the epsilon loss constraint
-		double loss = 0;
-		while (true)
+		bool binary_search = true;
+
+		if (curve.size() >= 2)
 		{
-			// reduce pv size and find by how much you need to increase battery
-			loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
-			if (loss < epsilon)
-			{
-				lowest_feasible_pv -= pv_step;
-			}
-			else
-			{
+			double lastC1 = curve.end()[-1].C;
+			double lastC2 = curve.end()[-2].C;
 
-				break;
+			if (lastC1 - lastC2 < 10 * pv_step)
+			{
+				// use linear search if last two pv values are close
+				binary_search = false;
+			}
+		}
+
+		if (binary_search)
+		{
+			double pv_U = lowest_feasible_pv;
+			double pv_L = 0;
+
+			while (pv_U - pv_L > pv_step)
+			{
+				double mid_pv = (pv_L + pv_U) / 2.0;
+				double loss = sim(load_trace, solar_trace, start_index, end_index, cells, mid_pv, b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
+
+				if (loss > epsilon)
+				{
+					pv_L = mid_pv;
+				}
+				else
+				{
+					// (loss <= epsilon)
+					pv_U = mid_pv;
+				}
 			}
 
-			// this only happens if the trace is very short, since the battery starts half full
-			// and can prevent loss without pv for a short time
-			if (lowest_feasible_pv <= 0)
+			lowest_feasible_pv = pv_U;
+		}
+		else
+		{
+			while (true)
 			{
-				lowest_feasible_pv = 0;
-				break;
+				double loss = sim(load_trace, solar_trace, start_index, end_index, cells, lowest_feasible_pv - pv_step,
+								  b_0, evRecords, allDailyStatuses, max_soc, min_soc, Ev_start, false);
+
+				if (loss < epsilon)
+				{
+					lowest_feasible_pv -= pv_step;
+				}
+				else
+				{
+					break;
+				}
+
+				// this only happens if the trace is very short, since the battery starts half full
+				// and can prevent loss without pv for a short time
+				if (lowest_feasible_pv <= 0)
+				{
+					lowest_feasible_pv = 0;
+					break;
+				}
 			}
 		}
 
 		double cost = B_inv * cells + PV_inv * lowest_feasible_pv;
-		// push all pv battery combinations that work
-		curve.push_back(SimulationResult(cells * kWh_in_one_cell, lowest_feasible_pv, cost));
 
-		if (cost < lowest_cost)
-		{
-			lowest_cost = cost;
-			lowest_B = cells * kWh_in_one_cell;
-			lowest_C = lowest_feasible_pv;
-		}
+		curve.emplace_back(cells * kWh_in_one_cell, lowest_feasible_pv, cost);
 	}
 
 	return curve;

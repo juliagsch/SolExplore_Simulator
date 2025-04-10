@@ -1,38 +1,31 @@
-#include <fstream>
-#include <sstream>
 #include <cstring>
 #include <cstdlib>
 #include <vector>
-#include <iostream>
 #include <climits>
+#include <iostream>
 #include <string>
+#include <regex>
 #include <set>
 
-#include "common.h"
+#include "params.h"
 
-double B_inv;  // cost per cell
 double PV_inv; // cost per unit (kW) of PV
 
-double cells_min;
-double cells_max;
-double cells_step; // search in step of x cells
 double pv_min;
 double pv_max;
 double pv_step; // search in steps of x kW
-int loadNumber;
 
 double max_soc;
 double min_soc;
-
 double ev_battery_capacity = 40.0;
-int t_ch = 3;
 double charging_rate = 7.4;
 double discharging_rate = 7.4;
 
-int ev_charged = 0;
-int ev_discharged = 0;
-int stat_charged = 0;
-int stat_discharged = 0;
+vector<double> solar;
+std::string wfh_type;
+
+vector<double> socValues;
+vector<ChargingEvent> chargingEvents;
 
 double grid_import = 0.0;
 double total_load = 0.0;
@@ -44,30 +37,9 @@ double power_lost = 0;         // Electricity lost due to charging and dischargi
 double max_charging_total = 0; // Total electricity used to charge the EV
 double ev_battery_diff = 0;    // EV battery difference between beginning and start of the simulation
 
-// common.cc
 std::string EV_charging = "naive";               // Default policy
 std::string Operation_policy = "unidirectional"; // Default policy
 std::string path_to_ev_data;
-
-double epsilon;
-double confidence;
-int metric;
-int days_in_chunk;
-
-vector<double> load;
-vector<double> solar;
-std::string wfh_type;
-
-vector<double> socValues;
-vector<ChargingEvent> chargingEvents;
-
-#include <iostream>
-#include <string>
-#include <cstdlib> // For std::stoi
-
-#include <iostream>
-#include <regex>
-#include <string>
 
 std::string extract_wfh_type(const std::string &ev_filename)
 {
@@ -84,7 +56,7 @@ std::string extract_wfh_type(const std::string &ev_filename)
     }
 }
 
-/*int extractLoadNumber(const std::string &filename)
+int extractLoadNumber(const std::string &filename)
 {
     // Find the position of "load_"
     size_t loadPos = filename.find("load_");
@@ -110,36 +82,7 @@ std::string extract_wfh_type(const std::string &ev_filename)
     return loadNumber;
 }
 
-
-*/
-
-vector<double> read_data_from_file(istream &datafile, int limit = INT_MAX)
-{
-
-    vector<double> data;
-
-    if (datafile.fail())
-    {
-        data.push_back(-1);
-        cerr << errno << ": read data file failed." << endl;
-        return data;
-    }
-
-    // read data file into vector
-    string line;
-    double value;
-
-    for (int i = 0; i < limit && getline(datafile, line); ++i)
-    {
-        istringstream iss(line);
-        iss >> value;
-        data.push_back(value);
-    }
-
-    return data;
-}
-
-int process_input(char **argv, bool process_metric_input)
+int process_input(int argc, char **argv, bool process_metric_input)
 {
 
     int i = 0;
@@ -165,7 +108,7 @@ int process_input(char **argv, bool process_metric_input)
 
     // set default pv_min and pv_step
     pv_min = 0;
-    pv_step = (pv_max - pv_min) / num_pv_steps;
+    pv_step = (pv_max - pv_min) / num_steps;
 
 #ifdef DEBUG
     cout << "pv_max_string = " << pv_max_string
@@ -180,7 +123,7 @@ int process_input(char **argv, bool process_metric_input)
 
     // set default cells_min and cells_step
     cells_min = 0;
-    cells_step = (cells_max - cells_min) / num_cells_steps;
+    cells_step = (cells_max - cells_min) / num_steps;
 
 #ifdef DEBUG
     cout << "cells_max_string = " << cells_max_string
@@ -253,7 +196,6 @@ int process_input(char **argv, bool process_metric_input)
         ifstream loadstream(loadfile.c_str());
         load = read_data_from_file(loadstream);
     }
-    // loadNumber = extractLoadNumber(loadfile);
 
 #ifdef DEBUG
     cout << "checking for errors in load file..." << endl;
@@ -262,6 +204,11 @@ int process_input(char **argv, bool process_metric_input)
     if (load[0] < 0)
     {
         cerr << "error reading load file " << loadfile << endl;
+        return 1;
+    }
+    else if (load.size() % T_yr > 0)
+    {
+        cerr << "load file length needs to be multiple of " << T_yr << endl;
         return 1;
     }
 
@@ -301,6 +248,11 @@ int process_input(char **argv, bool process_metric_input)
     if (solar[0] < 0)
     {
         cerr << "error reading solar file " << solarfile << endl;
+        return 1;
+    }
+    else if (solar.size() % T_yr > 0)
+    {
+        cerr << "solar file length needs to be multiple of " << T_yr << endl;
         return 1;
     }
 
@@ -352,6 +304,11 @@ int process_input(char **argv, bool process_metric_input)
 #ifdef DEBUG
     cout << " path_to_ev_data = " << path_to_ev_data << endl;
 #endif
+
+    chunk_size = days_in_chunk * 24 / T_u;
+    number_of_chunks = 100;
+
+    chunk_step = (load.size() / T_yr) * solar.size() / number_of_chunks;
 
     return 0;
 }
