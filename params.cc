@@ -20,6 +20,7 @@ double min_soc;
 double ev_battery_capacity = 40.0;
 double charging_rate = 7.4;
 double discharging_rate = 7.4;
+double min_battery_charge = 0;
 
 vector<double> solar;
 std::string wfh_type;
@@ -283,7 +284,7 @@ int process_input(int argc, char **argv, bool process_metric_input)
     cout << "charging_rate_string = " << charging_rate_string << ", charging_rate = " << charging_rate << endl;
 #endif
 
-    std::set<std::string> validOperationPolicyOptions = {"optimal_unidirectional", "safe_unidirectional", "hybrid_unidirectional", "optimal_bidirectional", "hybrid_bidirectional", "safe_bidirectional", "hybrid_bidirectional", "no_ev"};
+    std::set<std::string> validOperationPolicyOptions = {"safe_arrival", "safe_departure", "arrival_limit", "lbn_limit", "no_ev"};
 
     std::string operationPolicyInput = argv[++i];
 
@@ -299,6 +300,8 @@ int process_input(int argc, char **argv, bool process_metric_input)
     path_to_ev_data = path_to_ev_data_string;
     // cout << "path_to_ev_data_string = " << path_to_ev_data_string << endl;
     wfh_type = extract_wfh_type(path_to_ev_data);
+    string min_battery_charge_string = argv[++i];
+    min_battery_charge = stod(min_battery_charge_string);
     // cout << "wfh_type = " << wfh_type << endl;
 
 #ifdef DEBUG

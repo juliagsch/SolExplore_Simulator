@@ -28,6 +28,7 @@ extern double max_soc;
 extern double ev_battery_capacity;
 extern double charging_rate;
 extern double discharging_rate;
+extern double min_battery_charge;
 
 extern std::string Operation_policy;
 extern std::string path_to_ev_data;
@@ -41,6 +42,14 @@ struct SimulationResult
     double cost;
 
     SimulationResult(double B_val, double C_val, double cost_val) : B(B_val), C(C_val), cost(cost_val) {}
+};
+
+struct OperationResult
+{
+    double ev_b;
+    double b;
+    double ev_charged;
+    OperationResult(double ev_b_val, double b_val, double ev_charged_val) : ev_b(ev_b_val), b(b_val), ev_charged(ev_charged_val) {}
 };
 
 struct ChargingEvent

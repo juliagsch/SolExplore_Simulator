@@ -128,7 +128,7 @@ bool get_is_charging(const std::vector<EVStatus> &dailyStatuses, double ev_b, in
 	return false;
 }
 
-std::pair<double, double> no_ev(double b, double c, double d, int hour)
+OperationResult no_ev(double b, double c, double d, int hour)
 {
 	// There is leftover solar power after covering household and expected EV load
 	if (c > 0)
@@ -161,59 +161,13 @@ std::pair<double, double> no_ev(double b, double c, double d, int hour)
 		}
 	}
 
-	return std::make_pair(0, b);
+	return OperationResult(0, b, 0);
 }
 
-std::pair<double, double> safe_unidirectional(double b, double ev_b, double c, double d, bool isCharging, double maxCharging, double isHome, int hour)
+// First charge EV battery with leftover solar power and then the stationary battery
+OperationResult hybrid_unidirectional(double b, double ev_b, double c, double d, bool isCharging, double maxCharging, bool isHome, int hour)
 {
-	if (isCharging == true)
-	{
-		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
-		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
-		ChargingEvent event;
-		event.hour = hour;
-		event.chargingAmount = maxCharging;
-		chargingEvents.push_back(event);
-	}
-
-	// There is leftover solar power after covering household and expected EV load
-	if (c > 0)
-	{
-		double max_c = fmin(calc_max_charging(c, b), alpha_c);
-		b = b + max_c * eta_c * T_u;
-	}
-
-	// Electricity is missing to cover household and expected EV load
-	else if (d > 0)
-	{
-		double max_d = fmin(calc_max_discharging(d, b), alpha_d);
-		b = b - max_d * eta_d * T_u;
-		double res = d - max_d;
-		if (res > 0)
-		{
-			loss_events += 1;
-			load_deficit += res;
-			grid_import += res;
-
-			if (hour == 0 || hour == 1 || hour == 2 || hour == 3 || hour == 4)
-			{
-				// special grid tariff for home load
-				total_cost += res * 0.07;
-			}
-			else
-			{
-				total_cost += fmin(maxCharging, res) * 0.07;
-				res -= fmin(maxCharging, res);
-				total_cost += res * 0.35;
-			}
-		}
-	}
-
-	return std::make_pair(ev_b, b);
-}
-
-std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, double d, bool isCharging, double maxCharging, bool isHome, int hour)
-{
+	double ev_charged = 0.0;
 	if (isCharging == true)
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
@@ -222,12 +176,13 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 		event.hour = hour;
 		event.chargingAmount = maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
 		chargingEvents.push_back(event);
+		ev_charged += maxCharging;
 	}
 
 	// There is leftover solar power after covering household and expected EV load
 	if (c > 0)
 	{
-		// First we use the remaining the power the EV if if is home and if it hasn't been powered already.
+		// First we use the remaining electricity to power the EV if if is home and if it hasn't been powered already.
 		if (isHome == true && isCharging == false)
 		{
 			double max_c_ev = calc_max_charging_ev(fmin(c, charging_rate), ev_b);
@@ -239,6 +194,7 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 				event.hour = hour;
 				event.chargingAmount = max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
 				chargingEvents.push_back(event);
+				ev_charged += max_c_ev;
 			}
 			c -= max_c_ev;
 			total_load += max_c_ev;
@@ -259,17 +215,6 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 		b = b - max_d * eta_d * T_u;
 		double res = d - max_d;
 
-		if (res > 0 && isCharging == false && isHome == true)
-		{
-			double max_d_ev = fmin(calc_max_discharging_ev(res, ev_b, min_soc, ev_battery_capacity), discharging_rate / (eta_d_ev * T_u));
-			ev_b = ev_b - max_d_ev * eta_d_ev * T_u;
-			power_lost += (max_d_ev * eta_d_ev * T_u) - (max_d_ev * T_u);
-			res = res - max_d_ev;
-
-			// The electricity discharged from the EV needs to be excluded from the total load as it has already been included when the EV was charged.
-			total_load -= max_d_ev;
-		}
-
 		// We need to import from grid if there is still electricity missing
 		if (res > 0)
 		{
@@ -289,7 +234,7 @@ std::pair<double, double> hybrid_bidirectional(double b, double ev_b, double c, 
 			}
 		}
 	}
-	return std::make_pair(ev_b, b);
+	return OperationResult(ev_b, b, ev_charged);
 }
 
 double get_maxCharging(double ev_b)
@@ -312,7 +257,7 @@ double get_ev_b(std::vector<EVStatus> &dailyStatuses, int hour, double last_soc)
 }
 
 // call it with a specific battery and PV size and want to compute the loss
-double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start_index, size_t end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start, bool printGridCost)
+double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start_index, size_t end_index, double cells, double pv, double b_0, std::vector<EVRecord> evRecords, std::vector<std::vector<EVStatus>> allDailyStatuses, double max_soc, double min_soc, int Ev_start, bool writeLoad)
 {
 	update_parameters(cells);
 	loss_events = 0;
@@ -325,6 +270,8 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 	max_charging_total = 0;
 	double initial_battery_level_ev = 0;
 	double last_soc = 0;
+
+	std::vector<double> load_vec;
 
 	double b = 0.0; // Start simulation with an empty stationary battery
 	double c = 0.0; // Remaining solar energy after covering household and EV charging load
@@ -361,7 +308,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 			index_t_load = t % trace_length_load;
 			load_sum += load_trace[index_t_load];
 
-			std::pair<double, double> operationResult;
+			OperationResult operationResult = OperationResult(0, 0, 0);
 			if (Operation_policy == "no_ev")
 			{
 				double hourly_load = load_trace[index_t_load];
@@ -378,7 +325,7 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 				bool isHome = allDailyStatuses[ev_day][hour].isAtHome;
 				double ev_b = get_ev_b(allDailyStatuses[ev_day], hour, last_soc);
 				double maxCharging = 0.0;
-				if (Operation_policy == "safe_unidirectional")
+				if (Operation_policy == "safe_arrival")
 				{
 					if (isHome == true)
 					{
@@ -396,9 +343,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 					c = solar_trace[index_t_solar] * pv - hourly_load; // Remaining solar power after covering load
 					d = hourly_load - solar_trace[index_t_solar] * pv; // Missing power to cover load
 
-					operationResult = safe_unidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
+					operationResult = hybrid_unidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
 				}
-				else if (Operation_policy == "hybrid_bidirectional")
+				else if (Operation_policy == "safe_departure")
 				{
 					// Check if EV should currently be charging
 					isCharging = get_is_charging(allDailyStatuses[ev_day], ev_b, hour);
@@ -413,7 +360,39 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 					c = solar_trace[index_t_solar] * pv - hourly_load; // Remaining solar power after covering load
 					d = hourly_load - solar_trace[index_t_solar] * pv; // Missing power to cover load
 
-					operationResult = hybrid_bidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
+					operationResult = hybrid_unidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
+				}
+				else if (Operation_policy == "arrival_limit")
+				{
+					// Check if EV should currently be charging
+					if (isHome && ev_b < min_battery_charge)
+					{
+						maxCharging = get_maxCharging(ev_b);
+					}
+
+					double hourly_load = load_trace[index_t_load] + maxCharging;
+					total_load += hourly_load;
+
+					c = solar_trace[index_t_solar] * pv - hourly_load; // Remaining solar power after covering load
+					d = hourly_load - solar_trace[index_t_solar] * pv; // Missing power to cover load
+
+					operationResult = hybrid_unidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
+				}
+				else if (Operation_policy == "lbn_limit")
+				{
+					// Check if EV should currently be charging
+					if (isHome && hour <= 4 && ev_b < min_battery_charge)
+					{
+						maxCharging = get_maxCharging(ev_b);
+					}
+
+					double hourly_load = load_trace[index_t_load] + maxCharging;
+					total_load += hourly_load;
+
+					c = solar_trace[index_t_solar] * pv - hourly_load; // Remaining solar power after covering load
+					d = hourly_load - solar_trace[index_t_solar] * pv; // Missing power to cover load
+
+					operationResult = hybrid_unidirectional(b, ev_b, c, d, isCharging, maxCharging, isHome, hour);
 				}
 				else
 				{
@@ -422,16 +401,29 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 				max_charging_total += maxCharging;
 
 				// Update battery levels
-				ev_b = operationResult.first;
+				ev_b = operationResult.ev_b;
 				last_soc = ev_b;
 			}
-			b = operationResult.second;
+			b = operationResult.b;
+			load_vec.push_back(operationResult.ev_charged + load_trace[index_t_load]);
 		}
 	}
 	ev_battery_diff = last_soc;
-	if (printGridCost)
+	if (writeLoad)
 	{
-		std::cout << "Grid Cost: " << total_cost << " Total Load: " << total_load << " Grid Import: " << grid_import << std::endl;
+		std::ofstream outFile(Operation_policy + ".txt");
+		if (!outFile)
+		{
+			std::cerr << "Failed to open file!\n";
+			return 1;
+		}
+
+		for (double val : load_vec)
+		{
+			outFile << val << "\n"; // write each value on a new line
+		}
+
+		outFile.close(); // always close when done
 	}
 	if (metric == 0)
 	{
