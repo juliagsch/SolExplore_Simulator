@@ -284,7 +284,7 @@ int process_input(int argc, char **argv, bool process_metric_input)
     cout << "charging_rate_string = " << charging_rate_string << ", charging_rate = " << charging_rate << endl;
 #endif
 
-    std::set<std::string> validOperationPolicyOptions = {"safe_arrival", "safe_departure", "arrival_limit", "lbn_limit", "no_ev"};
+    std::set<std::string> validOperationPolicyOptions = {"safe_arrival", "safe_departure", "arrival_limit", "bidirectional", "lbn_limit", "no_ev"};
 
     std::string operationPolicyInput = argv[++i];
 
