@@ -26,7 +26,6 @@ vector<double> solar;
 std::string wfh_type;
 
 vector<double> socValues;
-vector<ChargingEvent> chargingEvents;
 
 double grid_import = 0.0;
 double total_load = 0.0;

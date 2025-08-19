@@ -171,10 +171,6 @@ OperationResult hybrid_unidirectional(double b, double ev_b, double c, double d,
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
-		ChargingEvent event;
-		event.hour = hour;
-		event.chargingAmount = maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
-		chargingEvents.push_back(event);
 		ev_charged += maxCharging;
 	}
 
@@ -189,10 +185,6 @@ OperationResult hybrid_unidirectional(double b, double ev_b, double c, double d,
 			power_lost += (max_c_ev * T_u) - (max_c_ev * eta_c_ev * T_u);
 			if (max_c_ev > 0)
 			{
-				ChargingEvent event;
-				event.hour = hour;
-				event.chargingAmount = max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
-				chargingEvents.push_back(event);
 				ev_charged += max_c_ev;
 			}
 			c -= max_c_ev;
@@ -244,10 +236,6 @@ OperationResult hybrid_bidirectional(double b, double ev_b, double c, double d, 
 	{
 		ev_b = ev_b + maxCharging * eta_c_ev * T_u;
 		power_lost += (maxCharging * T_u) - (maxCharging * eta_c_ev * T_u);
-		ChargingEvent event;
-		event.hour = hour;
-		event.chargingAmount = maxCharging; // TODO: Depending on use case this should be maxCharging * eta_c_ev * T_u
-		chargingEvents.push_back(event);
 		ev_charged += maxCharging;
 	}
 
@@ -262,10 +250,6 @@ OperationResult hybrid_bidirectional(double b, double ev_b, double c, double d, 
 			power_lost += (max_c_ev * T_u) - (max_c_ev * eta_c_ev * T_u);
 			if (max_c_ev > 0)
 			{
-				ChargingEvent event;
-				event.hour = hour;
-				event.chargingAmount = max_c_ev; // TODO: Depending on use case this should be max_c_ev * eta_c_ev * T_u
-				chargingEvents.push_back(event);
 				ev_charged += max_c_ev;
 			}
 			c -= max_c_ev;
@@ -353,8 +337,6 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 	max_charging_total = 0;
 	double initial_battery_level_ev = 0;
 	double last_soc = 0;
-
-	std::vector<double> load_vec;
 
 	double b = 0.0; // Start simulation with an empty stationary battery
 	double c = 0.0; // Remaining solar energy after covering household and EV charging load
@@ -509,26 +491,9 @@ double sim(vector<double> &load_trace, vector<double> &solar_trace, size_t start
 				last_soc = ev_b;
 			}
 			b = operationResult.b;
-			load_vec.push_back(operationResult.ev_charged + load_trace[index_t_load]);
 		}
 	}
 	ev_battery_diff = last_soc;
-	if (writeLoad)
-	{
-		std::ofstream outFile(Operation_policy + ".txt");
-		if (!outFile)
-		{
-			std::cerr << "Failed to open file!\n";
-			return 1;
-		}
-
-		for (double val : load_vec)
-		{
-			outFile << val << "\n"; // write each value on a new line
-		}
-
-		outFile.close(); // always close when done
-	}
 	if (metric == 0)
 	{
 		// lolp

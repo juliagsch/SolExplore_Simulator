@@ -52,13 +52,6 @@ struct OperationResult
     OperationResult(double ev_b_val, double b_val, double ev_charged_val) : ev_b(ev_b_val), b(b_val), ev_charged(ev_charged_val) {}
 };
 
-struct ChargingEvent
-{
-    int hour;
-    double chargingAmount;
-};
-
-extern std::vector<ChargingEvent> chargingEvents;
 extern std::vector<double> socValues;
 
 int process_input(int argc, char **argv, bool process_metric_input);
