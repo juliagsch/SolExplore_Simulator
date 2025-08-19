@@ -1,3 +1,7 @@
 .vscode
 .env
 /tests/__pycache__
+
+ev_merged.csv
+load.txt
+solar.txt
