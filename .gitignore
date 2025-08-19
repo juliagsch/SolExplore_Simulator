@@ -1,6 +1,7 @@
 .vscode
 .env
 /tests/__pycache__
+.pytest_cache
 
 ev_merged.csv
 load.txt
